@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">TravelMap</string>
+    <string name="naver_map_sdk_client_id" translatable="false">w24olyaf1n</string>
+
+    <string name="name_map_fragment">Map Fragment</string>
+    <string name="description_map_fragment">MapFragment를 사용한 지도 디스플레이</string>
+</resources>
