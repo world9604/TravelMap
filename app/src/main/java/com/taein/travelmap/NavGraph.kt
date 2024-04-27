@@ -79,7 +79,7 @@ fun NavGraph(
         modifier = Modifier.fillMaxSize()
     ) {
         composable(Destination.Map.route) {
-            MapScreen(upPress = upPress)
+            MapScreen()
         }
     }
 }

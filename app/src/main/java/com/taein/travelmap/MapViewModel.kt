@@ -5,13 +5,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Log
-import android.view.View
 import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.ViewModel
-import com.naver.maps.geometry.LatLng
-import com.naver.maps.map.NaverMap
-import com.naver.maps.map.overlay.Marker
-import com.naver.maps.map.overlay.OverlayImage
 import com.taein.travelmap.MainActivity.Companion.TAG
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,47 +18,20 @@ import kotlin.random.Random
 
 sealed interface MainActivityUiState {
     data object Loading : MainActivityUiState
-    data class Success(val userData: UserData) : MainActivityUiState
+    data class Success(val imageMeta: ImageMeta) : MainActivityUiState
 }
 
-data class UserData(
-    val naverMap: NaverMap? = null,
-    val imageMeta: ImageMeta? = null
-)
-
 data class ImageMeta(
-    val id: String,
-    val uri: Uri? = null,
-    val gpsLatitude: Double? = null,
-    val gpsLongitude: Double? = null,
+    val id: String = "-1",
+    val uri: Uri = Uri.EMPTY,
+    val gpsLatitude: Double = 0.0,
+    val gpsLongitude: Double = 0.0,
 )
 
 class MapViewModel : ViewModel() {
 
-    private val _uiState = MutableStateFlow(UserData())
-    val uiState: StateFlow<UserData> = _uiState.asStateFlow()
-
-    fun setMap(map: NaverMap) {
-        _uiState.update { userData ->
-            userData.copy(
-                naverMap = map,
-            )
-        }
-    }
-
-    fun setPhotoView(
-        view: View
-    ) {
-        Marker().apply {
-            position = LatLng(37.501312255859375, 127.0270767211914)
-            //setOnClickListener { true }
-            //icon = OverlayImage.fromBitmap(resizedBitmap)
-            icon = OverlayImage.fromView(view)
-            angle = 180f
-            //tag = uri.toString()
-            map = uiState.value.naverMap
-        }
-    }
+    private val _uiState = MutableStateFlow(ImageMeta())
+    val uiState: StateFlow<ImageMeta> = _uiState.asStateFlow()
 
     fun processImageUri(
         context: Context,
@@ -99,17 +67,6 @@ class MapViewModel : ViewModel() {
                         Log.d(TAG, "exif.TAG_GPS_LATITUDE: ${latitude}")
                         Log.d(TAG, "exif.TAG_GPS_LONGITUDE: ${longitude}")
 
-                        _uiState.update { currentState ->
-                            currentState.copy(
-                                imageMeta = ImageMeta(
-                                    id = Random(5).nextLong().toString(),
-                                    uri = uri,
-                                    gpsLatitude = latitude,
-                                    gpsLongitude = longitude
-                                )
-                            )
-                        }
-
                         /*val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                             ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, imageUri));
                         } else {
@@ -117,6 +74,15 @@ class MapViewModel : ViewModel() {
                         }
                         Log.d(TAG, "bitmap : ${bitmap}")
                         val resizedBitmap = resizeBitmap(uri, context, 70, 70) ?: return@forEach*/
+
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                id = Random(5).nextLong().toString(),
+                                uri = uri,
+                                gpsLatitude = latitude,
+                                gpsLongitude = longitude
+                            )
+                        }
                     }
                 } catch (e: IOException) {
                     e.printStackTrace()

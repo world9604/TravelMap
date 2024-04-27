@@ -21,6 +21,8 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.util.Log
+import android.view.View
+import android.widget.TextView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -34,10 +36,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.core.content.ContextCompat
@@ -47,21 +51,19 @@ import com.naver.maps.map.compose.ExperimentalNaverMapApi
 import com.naver.maps.map.compose.Marker
 import com.naver.maps.map.compose.NaverMap
 import com.naver.maps.map.compose.rememberMarkerState
-import com.naver.maps.map.overlay.Marker
 import com.naver.maps.map.overlay.OverlayImage
 
 @OptIn(ExperimentalNaverMapApi::class)
 @Composable
-fun MapScreen(upPress: () -> Unit) {
+fun MapScreen() {
     val viewModel: MapViewModel = viewModel()
     val context: Context = LocalContext.current
     var imageUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
-    var marker by remember { mutableStateOf(Marker()) }
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetMultipleContents()
     ) { uris: List<Uri> ->
         imageUris = uris
-        marker = viewModel.processImageUri(context, imageUris)
+        viewModel.processImageUri(context, imageUris)
     }
 
     Scaffold(
@@ -85,20 +87,80 @@ fun MapScreen(upPress: () -> Unit) {
             contentPadding = contentPadding
         ) {
             RequireImages()
+            val uiState by viewModel.uiState.collectAsState()
+            if (uiState.id != "-1") {
+                DisplayImageWithCoil(
+                    uri = uiState.uri,
+                    lan = uiState.gpsLatitude,
+                    lon = uiState.gpsLongitude)
+                Log.d(AppArgs.TAG, "uiState.latitude : ${uiState.gpsLatitude}")
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalNaverMapApi::class)
+@Composable
+fun DisplayImageWithCoil(
+    uri: Uri,
+    lan: Double,
+    lon: Double,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    /*AndroidView(
+        factory = { ctx ->
+            ImageView(ctx).apply {
+                // ImageView 설정
+                scaleType = ImageView.ScaleType.CENTER_CROP
+            }
+        },
+        modifier = Modifier.fillMaxWidth(),
+        update = { imageView ->
+            imageView.load(uri, context.imageLoader) {
+                crossfade(true)
+                placeholder(R.drawable.ic_launcher_background)
+                error(R.drawable.ic_launcher_foreground)
+                scale(Scale.FILL)
+            }
             Marker(
                 state = rememberMarkerState(
-                    position = LatLng(37.57145, 126.98191)
+                    position = LatLng(
+                        uiState.gpsLatitude,
+                        uiState.gpsLongitude
+                    )
                 ),
-                icon = OverlayImage.fromResource(R.drawable.ic_launcher_background),
+                //icon = OverlayImage.fromResource(R.drawable.ic_launcher_background),
+                icon = OverlayImage.fromView(DisplayImageWithCoil(uiState.uri, Modifier.fillMaxSize())),
                 width = dimensionResource(R.dimen.marker_size),
                 height = dimensionResource(R.dimen.marker_size),
                 isFlat = true,
                 angle = 90f,
             )
         }
-    }
+    )*/
+
+    Marker(
+        state = rememberMarkerState(
+            position = LatLng(
+                lan,
+                lon
+            )
+        ),
+        //icon = OverlayImage.fromResource(R.drawable.ic_launcher_background),
+        icon = OverlayImage.fromView(createCustomView(context)),
+        width = dimensionResource(R.dimen.marker_size),
+        height = dimensionResource(R.dimen.marker_size),
+        isFlat = true,
+        angle = 90f,
+    )
 }
 
+fun createCustomView(context: Context): View {
+    val textView = TextView(context)
+    textView.text = "Hello from TextView"
+    return textView
+}
 
 @Composable
 internal fun RequireImages() {

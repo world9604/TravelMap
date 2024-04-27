@@ -88,4 +88,5 @@ dependencies {
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
     implementation("io.coil-kt:coil-compose:2.6.0")
+
 }
