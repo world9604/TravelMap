@@ -67,6 +67,8 @@ dependencies {
     implementation(libs.androidx.ui.viewbinding)
     implementation(libs.hilt.android)
     implementation(libs.androidx.fragment)
+    implementation(libs.androidx.cardview)
+    implementation(libs.androidx.material3.android)
     ksp(libs.hilt.compiler)
     implementation(libs.map.sdk)
     implementation(libs.androidx.navigation.compose)
@@ -77,7 +79,6 @@ dependencies {
     implementation(libs.ui)
     implementation(libs.ui.graphics)
     implementation(libs.ui.tooling.preview)
-    implementation(libs.material3)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.exifinterface)
     testImplementation(libs.junit)
@@ -88,5 +89,4 @@ dependencies {
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
     implementation("io.coil-kt:coil-compose:2.6.0")
-
 }

@@ -21,19 +21,33 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
-import android.widget.TextView
+import android.view.ViewGroup
+import android.widget.ImageView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
@@ -41,105 +55,184 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.core.content.FileProvider
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
 import com.naver.maps.map.compose.Marker
 import com.naver.maps.map.compose.NaverMap
 import com.naver.maps.map.compose.rememberMarkerState
 import com.naver.maps.map.overlay.OverlayImage
+import java.io.File
+
 
 @OptIn(ExperimentalNaverMapApi::class)
 @Composable
-fun MapScreen() {
-    val viewModel: MapViewModel = viewModel()
-    val context: Context = LocalContext.current
-    var imageUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
-    val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.GetMultipleContents()
-    ) { uris: List<Uri> ->
-        imageUris = uris
-        viewModel.processImageUri(context, imageUris)
-    }
+fun MapScreen(viewModel: MapViewModel) {
+    val uiState by viewModel.uiState.collectAsState()
+    var showErrorDialog by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {},
         floatingActionButtonPosition = FabPosition.End,
         floatingActionButton = {
-            FloatingActionButton(
-                containerColor = MaterialTheme.colorScheme.onPrimary,
-                onClick = {
-                    launcher.launch("image/*")
-                }
+            Column(
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.PhotoCamera,
-                    contentDescription = "camera icon"
-                )
+                AddPhotoActionButton(viewModel)
+                CameraActionButton(viewModel)
             }
         }
     ) { contentPadding ->
-        NaverMap(
-            contentPadding = contentPadding
-        ) {
-            RequireImages()
-            val uiState by viewModel.uiState.collectAsState()
-            if (uiState.id != "-1") {
-                DisplayImageWithCoil(
-                    uri = uiState.uri,
-                    lan = uiState.gpsLatitude,
-                    lon = uiState.gpsLongitude)
-                Log.d(AppArgs.TAG, "uiState.latitude : ${uiState.gpsLatitude}")
+        NaverMap(contentPadding = contentPadding) {
+            when (uiState) {
+                is MapUiState.Loading -> {
+                    LoadingScreen()
+                }
+                is MapUiState.Success -> {
+                    DisplayPhoto(
+                        uri = (uiState as MapUiState.Success).imageMeta.uri,
+                        lan = (uiState as MapUiState.Success).imageMeta.gpsLatitude,
+                        lon = (uiState as MapUiState.Success).imageMeta.gpsLongitude
+                    )
+                }
+                is MapUiState.Error -> {
+                    errorMessage = (uiState as MapUiState.Error).message
+                    showErrorDialog = true
+                }
             }
+        }
+        ShowDialog(showErrorDialog, errorMessage)
+    }
+}
+
+@Composable
+private fun ShowDialog(showErrorDialog: Boolean, errorMessage: String) {
+    var showErrorDialog1 by remember { mutableStateOf(showErrorDialog) }
+
+    if (showErrorDialog1) {
+        AlertDialog(
+            onDismissRequest = {
+                showErrorDialog1 = false
+            },
+            title = {
+                Text(text = "오류 발생")
+            },
+            text = {
+                Text(text = errorMessage)
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showErrorDialog1 = false
+                    }
+                ) {
+                    Text("확인")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun LoadingScreen() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(50.dp),
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+private fun CameraActionButton(
+    viewModel: MapViewModel
+) {
+    val context = LocalContext.current
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
+    val file = File(context.externalMediaDirs.first(), "${System.currentTimeMillis()}.jpg")
+    imageUri = FileProvider.getUriForFile(context, context.packageName + ".provider", file)
+    Log.d(AppArgs.TAG, "CameraActionButton2 imageUri 1 : $imageUri")
+
+    val takePictureLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicture()
+    ) { success ->
+        imageUri?.let { uri ->
+            if (success) {
+                Log.d(AppArgs.TAG, "CameraActionButton2 imageUri 2 : $uri")
+                viewModel.processImageUri(context, uri)
+            } else {
+                Log.d(AppArgs.TAG, "CameraActionButton2 fail")
+            }
+        } ?: run {
+            Log.d(AppArgs.TAG, "CameraActionButton2 imageUri is null")
+        }
+    }
+
+    FloatingActionButton(
+        containerColor = MaterialTheme.colorScheme.onPrimary,
+        onClick = {
+            // 사진 촬영 인텐트 발생
+            takePictureLauncher.launch(imageUri)
+        }
+    ) {
+        Icon(
+            imageVector = Icons.Default.PhotoCamera,
+            contentDescription = "camera icon"
+        )
+    }
+}
+
+@Composable
+private fun AddPhotoActionButton(
+    viewModel: MapViewModel
+) {
+    val context: Context = LocalContext.current
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetMultipleContents()
+    ) { uris: List<Uri> ->
+        viewModel.processImageUri(context, uris)
+    }
+
+    FloatingActionButton(
+        containerColor = MaterialTheme.colorScheme.onPrimary,
+        onClick = {
+            launcher.launch("image/*")
+        }
+    ) {
+        Row {
+            Icon(
+                imageVector = Icons.Default.Image,
+                contentDescription = "Add Photo"
+            )
+            Text(
+                text = "Add Photo"
+            )
         }
     }
 }
 
 @OptIn(ExperimentalNaverMapApi::class)
 @Composable
-fun DisplayImageWithCoil(
+fun DisplayPhoto(
     uri: Uri,
     lan: Double,
     lon: Double,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    /*AndroidView(
-        factory = { ctx ->
-            ImageView(ctx).apply {
-                // ImageView 설정
-                scaleType = ImageView.ScaleType.CENTER_CROP
-            }
-        },
-        modifier = Modifier.fillMaxWidth(),
-        update = { imageView ->
-            imageView.load(uri, context.imageLoader) {
-                crossfade(true)
-                placeholder(R.drawable.ic_launcher_background)
-                error(R.drawable.ic_launcher_foreground)
-                scale(Scale.FILL)
-            }
-            Marker(
-                state = rememberMarkerState(
-                    position = LatLng(
-                        uiState.gpsLatitude,
-                        uiState.gpsLongitude
-                    )
-                ),
-                //icon = OverlayImage.fromResource(R.drawable.ic_launcher_background),
-                icon = OverlayImage.fromView(DisplayImageWithCoil(uiState.uri, Modifier.fillMaxSize())),
-                width = dimensionResource(R.dimen.marker_size),
-                height = dimensionResource(R.dimen.marker_size),
-                isFlat = true,
-                angle = 90f,
-            )
-        }
-    )*/
-
     Marker(
         state = rememberMarkerState(
             position = LatLng(
@@ -147,8 +240,7 @@ fun DisplayImageWithCoil(
                 lon
             )
         ),
-        //icon = OverlayImage.fromResource(R.drawable.ic_launcher_background),
-        icon = OverlayImage.fromView(createCustomView(context)),
+        icon = OverlayImage.fromView(createCustomView(context, uri)),
         width = dimensionResource(R.dimen.marker_size),
         height = dimensionResource(R.dimen.marker_size),
         isFlat = true,
@@ -156,10 +248,15 @@ fun DisplayImageWithCoil(
     )
 }
 
-fun createCustomView(context: Context): View {
-    val textView = TextView(context)
-    textView.text = "Hello from TextView"
-    return textView
+fun createCustomView(
+    context: Context,
+    uri: Uri
+): View {
+    val inflater = LayoutInflater.from(context)
+    val rootView = inflater.inflate(R.layout.user_photo_view, null) as ViewGroup
+    val imageView = rootView.findViewById<ImageView>(R.id.user_photo)
+    imageView.setImageURI(uri)
+    return rootView
 }
 
 @Composable

@@ -11,44 +11,95 @@ import com.taein.travelmap.MainActivity.Companion.TAG
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import java.io.IOException
 import java.io.InputStream
 import kotlin.random.Random
 
-sealed interface MainActivityUiState {
-    data object Loading : MainActivityUiState
-    data class Success(val imageMeta: ImageMeta) : MainActivityUiState
+sealed class MapUiState {
+    object Loading : MapUiState()
+    data class Success(val imageMeta: ImageMeta) : MapUiState()
+    data class Error(val message: String) : MapUiState()
 }
 
 data class ImageMeta(
-    val id: String = "-1",
-    val uri: Uri = Uri.EMPTY,
-    val gpsLatitude: Double = 0.0,
-    val gpsLongitude: Double = 0.0,
+    val id: String,
+    val uri: Uri,
+    val gpsLatitude: Double,
+    val gpsLongitude: Double
 )
 
 class MapViewModel : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ImageMeta())
-    val uiState: StateFlow<ImageMeta> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow<MapUiState>(MapUiState.Loading)
+    val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
 
+    /**
+     * todo : TAG_GPS_LATITUDE_REF, TAG_GPS_LONGITUDE_REF 값을 이용해서 동/서 관련 로직 구현
+     * https://velog.io/@im-shung/%EC%95%88%EB%93%9C%EB%A1%9C%EC%9D%B4%EB%93%9C-%EC%9D%B4%EB%AF%B8%EC%A7%80-%EC%A0%88%EB%8C%80%EA%B2%BD%EB%A1%9C%EC%99%80-gps-%EC%A0%95%EB%B3%B4-%EA%B5%AC%ED%95%98%EA%B8%B0
+     * imageUri : content://com.android.providers.media.documents/document/image%3A1000000035
+     * exif.TAG_GPS_LATITUDE: 37/1,30/1,472/100
+     * exif.TAG_GPS_LONGITUDE: 127/1,1/1,3748/100
+     */
+    fun processImageUri(
+        context: Context,
+        uri: Uri
+    ) {
+        Log.d(TAG, "imageUri in processImageUri : $uri")
+        _uiState.value = MapUiState.Loading
+        try {
+            context.contentResolver.openInputStream(uri).use { inputStream ->
+                val exif = ExifInterface(inputStream!!)
+                //todo : 이미지 마다 각도가 다르다. 각도를 다 맞출수는 없나?
+                /*val angle =
+                    exif.getAttribute(ExifInterface.TAG_/)?.let {
+                        convertToDegree(it).toDouble()
+                    } ?: return@forEach*/
+
+                val latitude =
+                    exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE)?.let {
+                        convertToDegree(it).toDouble()
+                    } ?: return
+
+                val longitude =
+                    exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE)?.let {
+                        convertToDegree(it).toDouble()
+                    } ?: return
+
+                Log.d(TAG, "exif.TAG_GPS_LATITUDE: $latitude")
+                Log.d(TAG, "exif.TAG_GPS_LONGITUDE: $longitude")
+                _uiState.value = MapUiState.Success(
+                    ImageMeta(
+                        id = Random(5).nextLong().toString(),
+                        uri = uri,
+                        gpsLatitude = latitude,
+                        gpsLongitude = longitude
+                    )
+                )
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+            _uiState.value = MapUiState.Error("Failed to process image : ${e.message}")
+        }
+    }
+
+    /**
+     * todo : TAG_GPS_LATITUDE_REF, TAG_GPS_LONGITUDE_REF 값을 이용해서 동/서 관련 로직 구현
+     * https://velog.io/@im-shung/%EC%95%88%EB%93%9C%EB%A1%9C%EC%9D%B4%EB%93%9C-%EC%9D%B4%EB%AF%B8%EC%A7%80-%EC%A0%88%EB%8C%80%EA%B2%BD%EB%A1%9C%EC%99%80-gps-%EC%A0%95%EB%B3%B4-%EA%B5%AC%ED%95%98%EA%B8%B0
+     * imageUri : content://com.android.providers.media.documents/document/image%3A1000000035
+     * exif.TAG_GPS_LATITUDE: 37/1,30/1,472/100
+     * exif.TAG_GPS_LONGITUDE: 127/1,1/1,3748/100
+     */
     fun processImageUri(
         context: Context,
         uriList: List<Uri>
     ) {
+        _uiState.value = MapUiState.Loading
+
         uriList.forEach { imageUri ->
             imageUri.let { uri ->
                 Log.d(TAG, "imageUri : $uri")
                 try {
                     context.contentResolver.openInputStream(uri).use { inputStream ->
-                        /**
-                         * todo : TAG_GPS_LATITUDE_REF, TAG_GPS_LONGITUDE_REF 값을 이용해서 동/서 관련 로직 구현
-                         * https://velog.io/@im-shung/%EC%95%88%EB%93%9C%EB%A1%9C%EC%9D%B4%EB%93%9C-%EC%9D%B4%EB%AF%B8%EC%A7%80-%EC%A0%88%EB%8C%80%EA%B2%BD%EB%A1%9C%EC%99%80-gps-%EC%A0%95%EB%B3%B4-%EA%B5%AC%ED%95%98%EA%B8%B0
-                         * imageUri : content://com.android.providers.media.documents/document/image%3A1000000035
-                         * exif.TAG_GPS_LATITUDE: 37/1,30/1,472/100
-                         * exif.TAG_GPS_LONGITUDE: 127/1,1/1,3748/100
-                         */
                         val exif = ExifInterface(inputStream!!)
                         //todo : 이미지마다 각도가 다르다. 각도를 다 맞출수는 없나?
                         /*val angle =
@@ -66,26 +117,18 @@ class MapViewModel : ViewModel() {
 
                         Log.d(TAG, "exif.TAG_GPS_LATITUDE: ${latitude}")
                         Log.d(TAG, "exif.TAG_GPS_LONGITUDE: ${longitude}")
-
-                        /*val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                            ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, imageUri));
-                        } else {
-                            MediaStore.Images.Media.getBitmap(context.contentResolver, imageUri);
-                        }
-                        Log.d(TAG, "bitmap : ${bitmap}")
-                        val resizedBitmap = resizeBitmap(uri, context, 70, 70) ?: return@forEach*/
-
-                        _uiState.update { currentState ->
-                            currentState.copy(
+                        _uiState.value = MapUiState.Success(
+                            ImageMeta(
                                 id = Random(5).nextLong().toString(),
                                 uri = uri,
                                 gpsLatitude = latitude,
                                 gpsLongitude = longitude
                             )
-                        }
+                        )
                     }
                 } catch (e: IOException) {
                     e.printStackTrace()
+                    _uiState.value = MapUiState.Error("Failed to process image : ${e.message}")
                 }
             }
         }
