@@ -29,19 +29,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -57,7 +53,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
@@ -84,7 +79,8 @@ fun MapScreen(viewModel: MapViewModel) {
         floatingActionButtonPosition = FabPosition.End,
         floatingActionButton = {
             Column(
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+                verticalArrangement = Arrangement.spacedBy(15.dp),
+                horizontalAlignment = Alignment.End
             ) {
                 AddPhotoActionButton(viewModel)
                 CameraActionButton(viewModel)
@@ -116,7 +112,6 @@ fun MapScreen(viewModel: MapViewModel) {
 @Composable
 private fun ShowDialog(showErrorDialog: Boolean, errorMessage: String) {
     var showErrorDialog1 by remember { mutableStateOf(showErrorDialog) }
-
     if (showErrorDialog1) {
         AlertDialog(
             onDismissRequest = {
@@ -143,7 +138,7 @@ private fun ShowDialog(showErrorDialog: Boolean, errorMessage: String) {
 
 @Composable
 fun LoadingScreen() {
-    Box(
+    /*Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White),
@@ -153,7 +148,7 @@ fun LoadingScreen() {
             modifier = Modifier.size(50.dp),
             color = MaterialTheme.colorScheme.primary
         )
-    }
+    }*/
 }
 
 @Composable
@@ -163,7 +158,8 @@ private fun CameraActionButton(
     val context = LocalContext.current
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     val file = File(context.externalMediaDirs.first(), "${System.currentTimeMillis()}.jpg")
-    imageUri = FileProvider.getUriForFile(context, context.packageName + ".provider", file)
+    if (!file.exists()) file.createNewFile()
+    imageUri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
     Log.d(AppArgs.TAG, "CameraActionButton2 imageUri 1 : $imageUri")
 
     val takePictureLauncher = rememberLauncherForActivityResult(
@@ -184,7 +180,6 @@ private fun CameraActionButton(
     FloatingActionButton(
         containerColor = MaterialTheme.colorScheme.onPrimary,
         onClick = {
-            // 사진 촬영 인텐트 발생
             takePictureLauncher.launch(imageUri)
         }
     ) {
@@ -212,10 +207,11 @@ private fun AddPhotoActionButton(
             launcher.launch("image/*")
         }
     ) {
-        Row {
+        Row(modifier = Modifier.padding(horizontal = 16.dp)) {
             Icon(
                 imageVector = Icons.Default.Image,
-                contentDescription = "Add Photo"
+                contentDescription = "Add Photo",
+                modifier = Modifier.padding(end = 5.dp)
             )
             Text(
                 text = "Add Photo"
