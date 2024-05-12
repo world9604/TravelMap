@@ -15,13 +15,18 @@ import java.io.IOException
 import java.io.InputStream
 import kotlin.random.Random
 
-sealed class MapUiState {
-    object Loading : MapUiState()
-    data class Success(val imageMeta: ImageMeta) : MapUiState()
-    data class Error(val message: String) : MapUiState()
+sealed interface MapUiState {
+    data object Loading : MapUiState
+    data object PhotoNotReady : MapUiState
+    data class Success(
+        val userPhoto: List<UserPhoto> = emptyList()
+    ) : MapUiState {
+        fun isEmpty(): Boolean = userPhoto.isEmpty()
+    }
+    data class Error(val message: String) : MapUiState
 }
 
-data class ImageMeta(
+data class UserPhoto(
     val id: String,
     val uri: Uri,
     val gpsLatitude: Double,
@@ -30,7 +35,7 @@ data class ImageMeta(
 
 class MapViewModel : ViewModel() {
 
-    private val _uiState = MutableStateFlow<MapUiState>(MapUiState.Loading)
+    private val _uiState = MutableStateFlow<MapUiState>(MapUiState.PhotoNotReady)
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
 
     /**
@@ -68,11 +73,13 @@ class MapViewModel : ViewModel() {
                 Log.d(TAG, "exif.TAG_GPS_LATITUDE: $latitude")
                 Log.d(TAG, "exif.TAG_GPS_LONGITUDE: $longitude")
                 _uiState.value = MapUiState.Success(
-                    ImageMeta(
-                        id = Random(5).nextLong().toString(),
-                        uri = uri,
-                        gpsLatitude = latitude,
-                        gpsLongitude = longitude
+                    listOf (
+                        UserPhoto(
+                            id = Random(5).nextLong().toString(),
+                            uri = uri,
+                            gpsLatitude = latitude,
+                            gpsLongitude = longitude
+                        )
                     )
                 )
             }
@@ -94,7 +101,7 @@ class MapViewModel : ViewModel() {
         uriList: List<Uri>
     ) {
         _uiState.value = MapUiState.Loading
-
+        val userPhotoList = mutableListOf<UserPhoto>()
         uriList.forEach { imageUri ->
             imageUri.let { uri ->
                 Log.d(TAG, "imageUri : $uri")
@@ -117,8 +124,8 @@ class MapViewModel : ViewModel() {
 
                         Log.d(TAG, "exif.TAG_GPS_LATITUDE: ${latitude}")
                         Log.d(TAG, "exif.TAG_GPS_LONGITUDE: ${longitude}")
-                        _uiState.value = MapUiState.Success(
-                            ImageMeta(
+                        userPhotoList.add(
+                            UserPhoto(
                                 id = Random(5).nextLong().toString(),
                                 uri = uri,
                                 gpsLatitude = latitude,
@@ -132,6 +139,7 @@ class MapViewModel : ViewModel() {
                 }
             }
         }
+        _uiState.value = MapUiState.Success(userPhotoList)
     }
 
     private fun convertToDegree(stringDMS: String): Float {

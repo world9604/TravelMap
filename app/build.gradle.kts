@@ -69,6 +69,7 @@ dependencies {
     implementation(libs.androidx.fragment)
     implementation(libs.androidx.cardview)
     implementation(libs.androidx.material3.android)
+    implementation(libs.material)
     ksp(libs.hilt.compiler)
     implementation(libs.map.sdk)
     implementation(libs.androidx.navigation.compose)
@@ -88,5 +89,6 @@ dependencies {
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
-    implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("com.github.bumptech.glide:glide:4.13.0")
+    annotationProcessor("com.github.bumptech.glide:compiler:4.13.0")
 }
