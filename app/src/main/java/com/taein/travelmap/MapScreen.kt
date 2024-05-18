@@ -1,18 +1,3 @@
-/*
- * Copyright 2022 SOUP
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.taein.travelmap
 
 import android.Manifest
@@ -37,6 +22,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.cardview.widget.CardView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -59,6 +45,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -69,6 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -108,9 +96,13 @@ fun MapScreen(viewModel: MapViewModel) {
 @Composable
 private fun OutsideMapScreen(uiState: MapUiState) {
     when (uiState) {
-        MapUiState.PhotoNotReady -> Unit
-        MapUiState.Loading -> LoadingScreen()
+        is MapUiState.PhotoNotReady -> Unit
+        is MapUiState.Loading -> LoadingScreen()
         is MapUiState.Error -> ShowDialog(true, uiState.message)
+        is MapUiState.PhotoNotLoad -> ShowDialog(
+            true,
+            stringResource(R.string.no_image_with_location_info)
+        )
         else -> Unit
     }
 }
@@ -142,23 +134,23 @@ private fun OnMapScreen(
 }
 
 @Composable
-private fun ShowDialog(showErrorDialog: Boolean, errorMessage: String) {
-    var showErrorDialog1 by remember { mutableStateOf(showErrorDialog) }
-    if (showErrorDialog1) {
+private fun ShowDialog(showDialog: Boolean, message: String) {
+    var showDialog1 by remember { mutableStateOf(showDialog) }
+    if (showDialog1) {
         AlertDialog(
             onDismissRequest = {
-                showErrorDialog1 = false
+                showDialog1 = false
             },
             title = {
                 Text(text = "오류 발생")
             },
             text = {
-                Text(text = errorMessage)
+                Text(text = message)
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        showErrorDialog1 = false
+                        showDialog1 = false
                     }
                 ) {
                     Text("확인")
@@ -209,17 +201,82 @@ private fun CameraActionButton(
         }
     }
 
-    FloatingActionButton(
-        containerColor = MaterialTheme.colorScheme.onPrimary,
-        onClick = {
-            takePictureLauncher.launch(imageUri)
+    RequireCameraAndLocationPermission(
+        requestPermission = {
+            RequestCameraPermissionDialog {
+                // 다시 권한 요청
+                takePictureLauncher.launch(imageUri)
+            }
         }
     ) {
-        Icon(
-            imageVector = Icons.Default.PhotoCamera,
-            contentDescription = "camera icon"
-        )
+        FloatingActionButton(
+            containerColor = MaterialTheme.colorScheme.onPrimary,
+            onClick = {
+                takePictureLauncher.launch(imageUri)
+            }
+        ) {
+            Icon(
+                imageVector = Icons.Default.PhotoCamera,
+                contentDescription = "camera icon"
+            )
+        }
     }
+}
+
+@Composable
+fun RequireCameraAndLocationPermission(
+    requestPermission: @Composable () -> Unit,
+    content: @Composable () -> Unit
+) {
+    var isGranted by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    val permissions = arrayOf(
+        Manifest.permission.CAMERA,
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.ACCESS_COARSE_LOCATION,
+        Manifest.permission.ACCESS_MEDIA_LOCATION
+    )
+
+    val requestPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissionsMap ->
+        isGranted = permissionsMap.values.all { it }
+    }
+
+    LaunchedEffect(key1 = isGranted) {
+        val allGranted = permissions.all {
+            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+        }
+        if (!allGranted) {
+            requestPermissionLauncher.launch(permissions)
+        } else {
+            isGranted = true
+        }
+    }
+
+    if (isGranted) {
+        content()
+    } else {
+        requestPermission()
+    }
+}
+
+
+@Composable
+private fun RequestCameraPermissionDialog(onRequestPermission: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = { /* 사용자가 다이얼로그를 닫을 때의 처리 */ },
+        title = { Text("권한 요청") },
+        text = { Text("이 기능을 사용하려면 카메라 권한이 필요합니다.") },
+        confirmButton = {
+            Button(
+                onClick = onRequestPermission
+            ) {
+                Text("권한 요청")
+            }
+        }
+    )
 }
 
 @Composable
@@ -262,12 +319,7 @@ fun DisplayPhoto(
 ) {
     val context = LocalContext.current
     Marker(
-        state = rememberMarkerState(
-            position = LatLng(
-                lan,
-                lon
-            )
-        ),
+        state = rememberMarkerState(position = LatLng(lan, lon)),
         icon = OverlayImage.fromView(createCustomView(context, uri)),
         /*width = dimensionResource(R.dimen.photo_marker_size),
         height = dimensionResource(R.dimen.photo_marker_size),
@@ -284,6 +336,9 @@ fun createCustomView(
     val rootView = inflater.inflate(R.layout.user_photo_view, null) as ViewGroup
     val imageView = rootView.findViewById<ImageView>(R.id.user_photo)
     imageView.setImageURI(uri)
+
+    val cardView = rootView.findViewById<CardView>(R.id.card_view)
+    cardView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
     return rootView
 }
 
@@ -326,14 +381,30 @@ internal fun RequireImages() {
     val requestPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { permission ->
-        when {
-            permission -> isGranted = true
-            !permission -> isGranted = false
+        isGranted = permission
+    }
+
+    val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        arrayOf(
+            Manifest.permission.ACCESS_MEDIA_LOCATION,
+            Manifest.permission.CAMERA
+        )
+    } else {
+        arrayOf(Manifest.permission.CAMERA)
+    }
+
+    permissions.forEach { permission ->
+        if (ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissionLauncher.launch(permission)
+        } else {
+            isGranted = true
         }
     }
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        RequestPermission(context, requestPermissionLauncher)
+    if (isGranted) {
+        // Permissions granted, proceed with image-related actions
+    } else {
+        // Handle case where permissions are not granted
     }
 }
 

@@ -5,4 +5,5 @@
     <string name="name_map_fragment">Map Fragment</string>
     <string name="description_map_fragment">MapFragment를 사용한 지도 디스플레이</string>
     <string name="user_photo_image_view">사용자가 선택한 포토 이미지뷰</string>
+    <string name="no_image_with_location_info">위치 정보를 가지고 있는 이미지가 없습니다.</string>
 </resources>
