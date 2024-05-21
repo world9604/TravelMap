@@ -3,25 +3,14 @@ package com.taein.travelmap
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffXfermode
-import android.graphics.Rect
-import android.graphics.RectF
 import android.net.Uri
-import android.os.Build
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.cardview.widget.CardView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -46,7 +35,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,9 +48,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.bitmap.RoundedCorners
-import com.bumptech.glide.request.RequestOptions
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
 import com.naver.maps.map.compose.Marker
@@ -98,11 +83,8 @@ private fun OutsideMapScreen(uiState: MapUiState) {
     when (uiState) {
         is MapUiState.PhotoNotReady -> Unit
         is MapUiState.Loading -> LoadingScreen()
-        is MapUiState.Error -> ShowDialog(true, uiState.message)
-        is MapUiState.PhotoNotLoad -> ShowDialog(
-            true,
-            stringResource(R.string.no_image_with_location_info)
-        )
+        is MapUiState.Error -> ShowDialog(uiState.message)
+        is MapUiState.PhotoNotLoad -> ShowDialog(stringResource(R.string.no_image_with_location_info))
         else -> Unit
     }
 }
@@ -119,7 +101,7 @@ private fun OnMapScreen(
                 if (uiState.isEmpty()) {
                     Unit
                 } else {
-                    for (userPhoto in uiState.userPhoto) {
+                    for (userPhoto in uiState.photoMarker) {
                         DisplayPhoto(
                             uri = userPhoto.uri,
                             lan = userPhoto.gpsLatitude,
@@ -134,12 +116,12 @@ private fun OnMapScreen(
 }
 
 @Composable
-private fun ShowDialog(showDialog: Boolean, message: String) {
-    var showDialog1 by remember { mutableStateOf(showDialog) }
-    if (showDialog1) {
+private fun ShowDialog(message: String) {
+    var showDialog by remember { mutableStateOf(true) }
+    if (showDialog) {
         AlertDialog(
             onDismissRequest = {
-                showDialog1 = false
+                showDialog = false
             },
             title = {
                 Text(text = "오류 발생")
@@ -150,7 +132,7 @@ private fun ShowDialog(showDialog: Boolean, message: String) {
             confirmButton = {
                 Button(
                     onClick = {
-                        showDialog1 = false
+                        showDialog = false
                     }
                 ) {
                     Text("확인")
@@ -204,7 +186,6 @@ private fun CameraActionButton(
     RequireCameraAndLocationPermission(
         requestPermission = {
             RequestCameraPermissionDialog {
-                // 다시 권한 요청
                 takePictureLauncher.launch(imageUri)
             }
         }
@@ -261,7 +242,6 @@ fun RequireCameraAndLocationPermission(
         requestPermission()
     }
 }
-
 
 @Composable
 private fun RequestCameraPermissionDialog(onRequestPermission: () -> Unit) {
@@ -340,96 +320,4 @@ fun createCustomView(
     val cardView = rootView.findViewById<CardView>(R.id.card_view)
     cardView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
     return rootView
-}
-
-fun loadImageWithRoundedCorners(context: Context, imageView: ImageView, uri: Uri) {
-    val options = RequestOptions().transform(RoundedCorners(20))
-    Glide.with(context)
-        .load(uri)
-        .apply(options)
-        .into(imageView)
-}
-
-fun roundCorners(context: Context, uri: Uri): Bitmap? {
-    val inputStream = context.contentResolver.openInputStream(uri)
-    val original = BitmapFactory.decodeStream(inputStream)
-    val width = original.width
-    val height = original.height
-    val output = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(output)
-
-    val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    val rect = Rect(0, 0, width, height)
-    val rectF = RectF(rect)
-    val radius = 100.0f
-    paint.isAntiAlias = true
-    canvas.drawRoundRect(rectF, radius, radius, paint)
-
-    paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
-    canvas.drawBitmap(original, rect, rect, paint)
-
-    original.recycle()
-    return output
-}
-
-
-@Composable
-internal fun RequireImages() {
-    var isGranted by remember { mutableStateOf(false) }
-    val context = LocalContext.current
-
-    val requestPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { permission ->
-        isGranted = permission
-    }
-
-    val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        arrayOf(
-            Manifest.permission.ACCESS_MEDIA_LOCATION,
-            Manifest.permission.CAMERA
-        )
-    } else {
-        arrayOf(Manifest.permission.CAMERA)
-    }
-
-    permissions.forEach { permission ->
-        if (ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissionLauncher.launch(permission)
-        } else {
-            isGranted = true
-        }
-    }
-
-    if (isGranted) {
-        // Permissions granted, proceed with image-related actions
-    } else {
-        // Handle case where permissions are not granted
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.Q)
-@Composable
-internal fun RequestPermission(
-    context: Context,
-    requestPermissionLauncher: ActivityResultLauncher<String>
-) {
-    when {
-        ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.ACCESS_MEDIA_LOCATION
-        ) != PackageManager.PERMISSION_GRANTED -> {
-            Log.d(AppArgs.TAG, "PERMISSION_TEST > requires permission")
-            SideEffect {
-                requestPermissionLauncher.launch(Manifest.permission.ACCESS_MEDIA_LOCATION)
-            }
-        }
-
-        else -> {
-            Log.d(AppArgs.TAG, "PERMISSION_TEST > else")
-            SideEffect {
-                requestPermissionLauncher.launch(Manifest.permission.ACCESS_MEDIA_LOCATION)
-            }
-        }
-    }
 }

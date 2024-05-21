@@ -5,4 +5,8 @@ import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
 class TravelMapApp: Application() {
+
+    override fun onCreate() {
+        super.onCreate()
+    }
 }

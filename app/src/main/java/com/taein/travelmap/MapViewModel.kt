@@ -1,14 +1,20 @@
 package com.taein.travelmap
 
+import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.location.Location
+import android.location.LocationManager
 import android.net.Uri
+import android.util.Log
 import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 import kotlin.random.Random
 
 sealed interface MapUiState {
@@ -16,95 +22,56 @@ sealed interface MapUiState {
     data object PhotoNotLoad : MapUiState
     data object PhotoNotReady : MapUiState
     data class Success(
-        val userPhoto: List<UserPhoto> = emptyList()
+        val photoMarker: List<PhotoMarker> = emptyList()
     ) : MapUiState {
-        fun isEmpty(): Boolean = userPhoto.isEmpty()
+        fun isEmpty(): Boolean = photoMarker.isEmpty()
     }
     data class Error(val message: String) : MapUiState
 }
 
-data class UserPhoto(
+data class PhotoMarker(
     val id: String,
     val uri: Uri,
     val gpsLatitude: Double,
     val gpsLongitude: Double
 )
 
-class MapViewModel : ViewModel() {
+@HiltViewModel
+class MapViewModel @Inject constructor(
+    private val repository: PhotoMarkerRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<MapUiState>(MapUiState.PhotoNotReady)
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
 
-    fun processImageUri(
-        context: Context,
-        uri: Uri
-    ) {
+    fun processImageUri(context: Context, uri: Uri) {
         _uiState.value = MapUiState.Loading
 
-        val userPhoto = runCatching {
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                val exifInterface = ExifInterface(inputStream)
-                val latitude = exifInterface.getAttribute(ExifInterface.TAG_GPS_LATITUDE)?.let {
-                    convertToDegree(it).toDouble()
-                }
-                val longitude = exifInterface.getAttribute(ExifInterface.TAG_GPS_LONGITUDE)?.let {
-                    convertToDegree(it).toDouble()
-                }
-
-                if (latitude != null && longitude != null) {
-                    UserPhoto(
-                        id = Random.nextLong().toString(),
-                        uri = uri,
-                        gpsLatitude = latitude,
-                        gpsLongitude = longitude
-                    )
-                } else null
-            }
-        }.onFailure { e ->
-            e.printStackTrace()
-            _uiState.value = MapUiState.Error("Failed to process image. message : ${e.message}")
-            return
-        }.getOrNull()
-
-        if (userPhoto != null) {
-            _uiState.value = MapUiState.Success(listOf(userPhoto))
+        val currentLocation = getCurrentLocation(context)
+        if (currentLocation != null) {
+            val (latitude, longitude) = currentLocation
+            addLocationToImage(context, uri, latitude, longitude)
+        } else {
+            _uiState.value = MapUiState.PhotoNotLoad
             return
         }
 
-        if (_uiState.value is MapUiState.Loading) {
+        val userPhoto = createUserPhoto(context, uri)
+        userPhoto?.let {
+            viewModelScope.launch {
+                repository.addPhotoMarker(it)
+                _uiState.value = MapUiState.Success(listOf(it))
+            }
+        } ?: run {
             _uiState.value = MapUiState.PhotoNotLoad
         }
     }
 
-    fun processImageUri(
-        context: Context,
-        uriList: List<Uri>
-    ) {
+    fun processImageUri(context: Context, uriList: List<Uri>) {
         _uiState.value = MapUiState.Loading
 
         val userPhotoList = uriList.mapNotNull { uri ->
-            runCatching {
-                context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                    val exif = ExifInterface(inputStream)
-                    val latitude = exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE)?.let {
-                        convertToDegree(it).toDouble()
-                    }
-                    val longitude = exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE)?.let {
-                        convertToDegree(it).toDouble()
-                    }
-
-                    if (latitude != null && longitude != null) {
-                        UserPhoto(
-                            id = Random.nextLong().toString(),
-                            uri = uri,
-                            gpsLatitude = latitude,
-                            gpsLongitude = longitude
-                        )
-                    } else null
-                }
-            }.onFailure { e ->
-                e.printStackTrace()
-            }.getOrNull()
+            createUserPhoto(context, uri)
         }
 
         _uiState.value = if (userPhotoList.isNotEmpty()) {
@@ -114,45 +81,52 @@ class MapViewModel : ViewModel() {
         }
     }
 
-    private fun convertToDegree(stringDMS: String): Float {
-        val DMS = stringDMS.split(",")
-        val (D0, D1) = DMS[0].split("/").map { it.toDouble() }
-        val (M0, M1) = DMS[1].split("/").map { it.toDouble() }
-        val (S0, S1) = DMS[2].split("/").map { it.toDouble() }
-
-        return (D0 / D1 + M0 / M1 / 60 + S0 / S1 / 3600).toFloat()
-    }
-
-    fun resizeBitmap(uri: Uri, context: Context, targetWidth: Int, targetHeight: Int): Bitmap? {
-        return try {
+    private fun createUserPhoto(context: Context, uri: Uri): PhotoMarker? {
+        return runCatching {
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                BitmapFactory.decodeStream(inputStream, null, options)
+                val exifInterface = ExifInterface(inputStream)
+                val latLong = exifInterface.latLong
 
-                options.inSampleSize = calculateInSampleSize(options, targetWidth, targetHeight)
-                options.inJustDecodeBounds = false
-
-                context.contentResolver.openInputStream(uri)?.use {
-                    BitmapFactory.decodeStream(it, null, options)
+                latLong?.let {
+                    PhotoMarker(
+                        id = Random.nextLong().toString(),
+                        uri = uri,
+                        gpsLatitude = it[0],
+                        gpsLongitude = it[1]
+                    )
                 }
             }
-        } catch (e: Exception) {
+        }.onFailure { e ->
             e.printStackTrace()
-            null
-        }
+            _uiState.value = MapUiState.Error("Failed to process image. message : ${e.message}")
+        }.getOrNull()
     }
 
-    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
-        val (height, width) = options.run { outHeight to outWidth }
-        var inSampleSize = 1
+    @SuppressLint("MissingPermission")
+    fun getCurrentLocation(context: Context): Pair<Double, Double>? {
+        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+        val isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
 
-        if (height > reqHeight || width > reqWidth) {
-            val (halfHeight, halfWidth) = height / 2 to width / 2
-            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
-                inSampleSize *= 2
-            }
+        val location: Location? = when {
+            isGpsEnabled -> locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+            isNetworkEnabled -> locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+            else -> null
         }
 
-        return inSampleSize
+        return location?.let { Pair(it.latitude, it.longitude) }
+    }
+
+    private fun addLocationToImage(context: Context, imageUri: Uri, latitude: Double, longitude: Double) {
+        try {
+            context.contentResolver.openFileDescriptor(imageUri, "rw")?.use { pfd ->
+                val exif = ExifInterface(pfd.fileDescriptor)
+                exif.setLatLong(latitude, longitude)
+                exif.saveAttributes()
+                Log.d("EXIF", "Location added to image: $latitude, $longitude")
+            }
+        } catch (e: Exception) {
+            Log.e("EXIF", "Failed to add location to image", e)
+        }
     }
 }
