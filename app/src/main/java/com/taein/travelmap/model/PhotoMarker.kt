@@ -1,18 +1,15 @@
 package com.taein.travelmap.model
 
 import android.net.Uri
-import androidx.room.Entity
-import androidx.room.PrimaryKey
 
-@Entity(tableName = "photo_markers")
-data class PhotoMarkerEntity(
-    @PrimaryKey val id: String,
+data class PhotoMarker(
+    val id: String,
     val uri: Uri,
     val gpsLatitude: Double,
     val gpsLongitude: Double
 )
 
-fun PhotoMarkerEntity.asExternalModel() = PhotoMarker(
+fun PhotoMarker.asEntity() = PhotoMarkerEntity(
     id = id,
     uri = uri,
     gpsLatitude = gpsLatitude,

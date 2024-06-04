@@ -9,10 +9,13 @@ import android.util.Log
 import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.taein.travelmap.model.PhotoMarker
+import com.taein.travelmap.repository.PhotoMarkerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.random.Random
@@ -20,6 +23,10 @@ import kotlin.random.Random
 sealed interface MapUiState {
     data object Loading : MapUiState
     data object PhotoNotLoad : MapUiState
+
+    /**
+     * PhotoNotReady 상태는 최초의 photo marker를 한번도 업로드 하지 않은 상태
+     */
     data object PhotoNotReady : MapUiState
     data class Success(
         val photoMarker: List<PhotoMarker> = emptyList()
@@ -29,24 +36,25 @@ sealed interface MapUiState {
     data class Error(val message: String) : MapUiState
 }
 
-data class PhotoMarker(
-    val id: String,
-    val uri: Uri,
-    val gpsLatitude: Double,
-    val gpsLongitude: Double
-)
-
 @HiltViewModel
 class MapViewModel @Inject constructor(
     private val repository: PhotoMarkerRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<MapUiState>(MapUiState.PhotoNotReady)
-    val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
+    //val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
+    val uiState = repository.observeAll()
+        .map{ photoMarkers ->
+            if (photoMarkers.isEmpty()) MapUiState.PhotoNotLoad
+            else MapUiState.Success(photoMarkers)
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = MapUiState.PhotoNotReady,
+        )
 
     fun processImageUri(context: Context, uri: Uri) {
-        _uiState.value = MapUiState.Loading
-
         val currentLocation = getCurrentLocation(context)
         if (currentLocation != null) {
             val (latitude, longitude) = currentLocation
@@ -56,14 +64,10 @@ class MapViewModel @Inject constructor(
             return
         }
 
-        val userPhoto = createUserPhoto(context, uri)
-        userPhoto?.let {
+        createUserPhoto(context, uri)?.let {
             viewModelScope.launch {
                 repository.addPhotoMarker(it)
-                _uiState.value = MapUiState.Success(listOf(it))
             }
-        } ?: run {
-            _uiState.value = MapUiState.PhotoNotLoad
         }
     }
 
@@ -74,10 +78,10 @@ class MapViewModel @Inject constructor(
             createUserPhoto(context, uri)
         }
 
-        _uiState.value = if (userPhotoList.isNotEmpty()) {
-            MapUiState.Success(userPhotoList)
-        } else {
-            MapUiState.PhotoNotLoad
+        if (userPhotoList.isNotEmpty()) {
+            viewModelScope.launch {
+                repository.addPhotoMarkers(userPhotoList)
+            }
         }
     }
 

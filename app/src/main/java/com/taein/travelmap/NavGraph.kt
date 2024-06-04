@@ -70,7 +70,6 @@ fun NavGraph(
     startDestination: String = Destination.Map.route,
 ) {
     val navController = rememberNavController()
-    val viewModel = MapViewModel()
     val upPress: () -> Unit = {
         navController.navigateUp()
     }
@@ -81,7 +80,7 @@ fun NavGraph(
         modifier = Modifier.fillMaxSize()
     ) {
         composable(Destination.Map.route) {
-            MapScreen(viewModel)
+            MapScreen()
         }
     }
 }

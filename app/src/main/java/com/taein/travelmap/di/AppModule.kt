@@ -2,9 +2,10 @@ package com.taein.travelmap.di
 
 import android.content.Context
 import androidx.room.Room
-import com.taein.travelmap.PhotoMarkerRepository
 import com.taein.travelmap.database.AppDatabase
 import com.taein.travelmap.database.PhotoMarkerDao
+import com.taein.travelmap.repository.OfflineFirstPhotoMarkerRepository
+import com.taein.travelmap.repository.PhotoMarkerRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -29,6 +30,6 @@ object AppModule {
 
     @Provides
     fun providePhotoMarkerRepository(photoMarkerDao: PhotoMarkerDao): PhotoMarkerRepository {
-        return PhotoMarkerRepository(photoMarkerDao)
+        return OfflineFirstPhotoMarkerRepository(photoMarkerDao)
     }
 }

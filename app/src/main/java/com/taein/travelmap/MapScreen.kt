@@ -3,6 +3,7 @@ package com.taein.travelmap
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.media.MediaScannerConnection
 import android.net.Uri
 import android.util.Log
 import android.view.LayoutInflater
@@ -48,6 +49,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.core.net.toFile
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
 import com.naver.maps.map.compose.Marker
@@ -58,7 +61,9 @@ import java.io.File
 
 
 @Composable
-fun MapScreen(viewModel: MapViewModel) {
+fun MapScreen(
+    viewModel: MapViewModel = hiltViewModel()
+) {
     val uiState by viewModel.uiState.collectAsState()
     Scaffold(
         topBar = {},
@@ -173,8 +178,14 @@ private fun CameraActionButton(
     ) { success ->
         imageUri?.let { uri ->
             if (success) {
-                Log.d(AppArgs.TAG, "CameraActionButton2 imageUri 2 : $uri")
-                viewModel.processImageUri(context, uri)
+                MediaScannerConnection.scanFile(
+                    context,
+                    arrayOf(uri.toFile().absolutePath),
+                    null
+                ) { path, it ->
+                    Log.d(AppArgs.TAG, "MediaScanner scanned: $path -> $it")
+                    viewModel.processImageUri(context, it)
+                }
             } else {
                 Log.d(AppArgs.TAG, "CameraActionButton2 fail")
             }

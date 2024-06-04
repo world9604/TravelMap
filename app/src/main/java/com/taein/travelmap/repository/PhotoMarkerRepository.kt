@@ -1,17 +1,13 @@
 package com.taein.travelmap.repository
 
-import com.taein.travelmap.database.PhotoMarkerDao
-import com.taein.travelmap.model.PhotoMarkerEntity
-import javax.inject.Inject
+import com.taein.travelmap.model.PhotoMarker
+import kotlinx.coroutines.flow.Flow
 
-class PhotoMarkerRepository @Inject constructor(
-    private val photoMarkerDao: PhotoMarkerDao
-) {
-    suspend fun addPhotoMarker(photoMarker: PhotoMarkerEntity) {
-        photoMarkerDao.insertPhotoMarker(photoMarker)
-    }
+interface PhotoMarkerRepository {
 
-    suspend fun getPhotoMarkers(): List<PhotoMarkerEntity> {
-        return photoMarkerDao.getAllPhotoMarkers()
-    }
+    suspend fun addPhotoMarker(photoMarker: PhotoMarker)
+
+    suspend fun addPhotoMarkers(photoMarkers: List<PhotoMarker>)
+
+    fun observeAll(): Flow<List<PhotoMarker>>
 }

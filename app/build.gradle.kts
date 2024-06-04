@@ -71,6 +71,7 @@ dependencies {
     implementation(libs.androidx.material3.android)
     implementation(libs.material)
     ksp(libs.hilt.compiler)
+    implementation("androidx.hilt:hilt-navigation-compose:1.0.0")
     implementation(libs.map.sdk)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.core.ktx)
