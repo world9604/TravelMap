@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.taein.travelmap.detailHotPlace.DetailHotPlaceScreen
 import com.taein.travelmap.detailPhotoMarker.DetailPhotoMarkerScreen
+import com.taein.travelmap.map.MapScreen
 
 
 enum class Destination(val route: String) {

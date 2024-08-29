@@ -1,12 +1,12 @@
 package com.taein.travelmap.detailPhotoMarker
 
 import com.taein.travelmap.model.DiaryEntity
-import java.time.LocalDateTime
+import java.util.Calendar
 
 data class Diary(
     val id: String,
     val photo: String,
-    val date: LocalDateTime,
+    val date: Calendar,
     val contents: String
 )
 
