@@ -19,7 +19,8 @@ import androidx.core.view.WindowCompat
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
     secondary = PurpleGrey80,
-    tertiary = Pink80
+    tertiary = Pink80,
+    onSecondary = Color(0xFF898989),
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -31,7 +32,7 @@ private val LightColorScheme = lightColorScheme(
     background = Color(0xFFFFFBFE),
     surface = Color(0xFFFFFBFE),
     onPrimary = Color.White,
-    onSecondary = Color.White,
+    onSecondary = Color(0xFF898989),
     onTertiary = Color.White,
     onBackground = Color(0xFF1C1B1F),
     onSurface = Color(0xFF1C1B1F),
@@ -63,7 +64,7 @@ fun TravelMapTheme(
     }
 
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = LightColorScheme,
         typography = Typography,
         content = content
     )

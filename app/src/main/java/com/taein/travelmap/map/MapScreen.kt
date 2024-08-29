@@ -1,4 +1,4 @@
-package com.taein.travelmap
+package com.taein.travelmap.map
 
 import android.Manifest
 import android.content.Context
@@ -57,6 +57,8 @@ import com.naver.maps.map.compose.Marker
 import com.naver.maps.map.compose.NaverMap
 import com.naver.maps.map.compose.rememberMarkerState
 import com.naver.maps.map.overlay.OverlayImage
+import com.taein.travelmap.AppArgs
+import com.taein.travelmap.R
 import java.io.File
 
 

@@ -1,6 +1,6 @@
-package com.taein.travelmap.repository
+package com.taein.travelmap.repository.photoMarker
 
-import com.taein.travelmap.model.PhotoMarker
+import com.taein.travelmap.map.PhotoMarker
 import kotlinx.coroutines.flow.Flow
 
 interface PhotoMarkerRepository {

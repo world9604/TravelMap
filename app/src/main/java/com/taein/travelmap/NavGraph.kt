@@ -1,11 +1,12 @@
 package com.taein.travelmap
 
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.taein.travelmap.detailHotPlace.DetailHotPlaceScreen
+import com.taein.travelmap.detailPhotoMarker.DetailPhotoMarkerScreen
 
 
 enum class Destination(val route: String) {
@@ -13,6 +14,8 @@ enum class Destination(val route: String) {
 
     // BASIC
     Map("Map"),
+    DetailHotPlace("DetailHotPlace"),
+    DetailPhotoMarker("DetailPhotoMarker"),
     MapInColumn("MapInColumn"),
     MapClustering("MapClustering"),
 
@@ -67,7 +70,8 @@ enum class Destination(val route: String) {
 
 @Composable
 fun NavGraph(
-    startDestination: String = Destination.Map.route,
+    startDestination: String = Destination.DetailPhotoMarker.route,
+    modifier: Modifier = Modifier
 ) {
     val navController = rememberNavController()
     val upPress: () -> Unit = {
@@ -77,10 +81,16 @@ fun NavGraph(
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        modifier = Modifier.fillMaxSize()
+        modifier = modifier,
     ) {
         composable(Destination.Map.route) {
             MapScreen()
+        }
+        composable(Destination.DetailPhotoMarker.route) {
+            DetailPhotoMarkerScreen()
+        }
+        composable(Destination.DetailHotPlace.route) {
+            DetailHotPlaceScreen()
         }
     }
 }

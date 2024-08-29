@@ -1,9 +1,9 @@
-package com.taein.travelmap.repository
+package com.taein.travelmap.repository.photoMarker
 
 import com.taein.travelmap.database.PhotoMarkerDao
-import com.taein.travelmap.model.PhotoMarker
+import com.taein.travelmap.map.PhotoMarker
+import com.taein.travelmap.map.asEntity
 import com.taein.travelmap.model.PhotoMarkerEntity
-import com.taein.travelmap.model.asEntity
 import com.taein.travelmap.model.asExternalModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

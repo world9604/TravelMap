@@ -1,4 +1,4 @@
-package com.taein.travelmap
+package com.taein.travelmap.map
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -9,8 +9,7 @@ import android.util.Log
 import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.taein.travelmap.model.PhotoMarker
-import com.taein.travelmap.repository.PhotoMarkerRepository
+import com.taein.travelmap.repository.photoMarker.PhotoMarkerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,21 +19,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.random.Random
 
-sealed interface MapUiState {
-    data object Loading : MapUiState
-    data object PhotoNotLoad : MapUiState
-
-    /**
-     * PhotoNotReady 상태는 최초의 photo marker를 한번도 업로드 하지 않은 상태
-     */
-    data object PhotoNotReady : MapUiState
-    data class Success(
-        val photoMarker: List<PhotoMarker> = emptyList()
-    ) : MapUiState {
-        fun isEmpty(): Boolean = photoMarker.isEmpty()
-    }
-    data class Error(val message: String) : MapUiState
-}
 
 @HiltViewModel
 class MapViewModel @Inject constructor(

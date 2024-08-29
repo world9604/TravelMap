@@ -1,6 +1,7 @@
-package com.taein.travelmap.model
+package com.taein.travelmap.map
 
 import android.net.Uri
+import com.taein.travelmap.model.PhotoMarkerEntity
 
 data class PhotoMarker(
     val id: String,
