@@ -24,4 +24,8 @@ class OfflineFirstDiaryRepository @Inject constructor(
     override fun observeAll(): Flow<List<Diary>> =
         diaryDao.getAllDiaries()
             .map { it.map(DiaryEntity::asExternalModel) }
+
+    override fun observe(id: String): Flow<Diary> =
+        diaryDao.getDiary(id)
+            .map { it.asExternalModel() }
 }

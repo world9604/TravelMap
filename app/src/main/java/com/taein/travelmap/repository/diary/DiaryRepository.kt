@@ -10,4 +10,6 @@ interface DiaryRepository {
     suspend fun addDiaries(diaries: List<Diary>)
 
     fun observeAll(): Flow<List<Diary>>
+
+    fun observe(id: String): Flow<Diary>
 }

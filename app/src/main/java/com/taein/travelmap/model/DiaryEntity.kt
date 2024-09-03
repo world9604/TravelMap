@@ -3,13 +3,12 @@ package com.taein.travelmap.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.taein.travelmap.detailPhotoMarker.Diary
-import java.util.Calendar
 
 @Entity(tableName = "diaries")
 data class DiaryEntity(
     @PrimaryKey val id: String,
-    val photo: String,
-    val date: Calendar,
+    val photo: List<String>,
+    val date: String,
     val contents: String
 )
 

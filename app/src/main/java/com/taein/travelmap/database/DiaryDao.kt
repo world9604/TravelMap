@@ -17,4 +17,7 @@ interface DiaryDao {
 
     @Query("SELECT * FROM diaries")
     fun getAllDiaries(): Flow<List<DiaryEntity>>
+
+    @Query("SELECT * FROM diaries WHERE id = :id")
+    fun getDiary(id: String): Flow<DiaryEntity>
 }

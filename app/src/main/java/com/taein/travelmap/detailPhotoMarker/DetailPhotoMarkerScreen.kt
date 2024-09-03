@@ -21,6 +21,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberImagePainter
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 @Preview(showBackground = true)
 @Composable
@@ -36,14 +39,17 @@ fun DetailPhotoMarkerScreen(
     val date = "2023년 10월 23일 오후 8:20"
     val diary by remember { mutableStateOf("") }
 
-    val uiState by viewModel.uiState.collectAsState()
     val modifier = Modifier
+    val uiState by viewModel.uiState.collectAsState()
 
     when (uiState) {
         is DetailPhotoMarkerUiState.Error -> TODO()
         DetailPhotoMarkerUiState.Loading -> TODO()
         DetailPhotoMarkerUiState.NotShown -> TODO()
-        is DetailPhotoMarkerUiState.PhotoUploadSuccess -> DetailPhotoMarker(uiState.diary, modifier)
+        is DetailPhotoMarkerUiState.PhotoUploadSuccess -> {
+            val successState = uiState as DetailPhotoMarkerUiState.PhotoUploadSuccess
+            DetailPhotoMarker(successState.diary, modifier)
+        }
     }
 }
 
@@ -66,6 +72,11 @@ private fun Date(date: String, modifier: Modifier = Modifier) {
         text = date,
         style = MaterialTheme.typography.labelSmall
     )
+}
+
+fun calendarToString(calendar: Calendar): String {
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+    return dateFormat.format(calendar.time)
 }
 
 @Composable

@@ -9,8 +9,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 import javax.inject.Inject
 
 
@@ -20,10 +21,9 @@ class DetailPhotoMarkerViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<DetailPhotoMarkerUiState>(DetailPhotoMarkerUiState.NotShown)
-    val uiState = repository.observeAll()
-        .map{ diaries ->
-            if (diaries.isEmpty()) DetailPhotoMarkerUiState.NotShown
-            else DetailPhotoMarkerUiState.PhotoUploadSuccess(diaries)
+    val uiState = repository.observe(id)
+        .map { diary ->
+            DetailPhotoMarkerUiState.PhotoUploadSuccess(diary)
         }
         .stateIn(
             scope = viewModelScope,
@@ -31,9 +31,9 @@ class DetailPhotoMarkerViewModel @Inject constructor(
             initialValue = DetailPhotoMarkerUiState.Loading,
         )
 
-    private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+    private val dateFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
 
-    fun getFormattedDateTime(dateTime: LocalDateTime): String {
-        return dateTime.format(dateFormatter)
+    fun getFormattedDate(calendar: Calendar): String {
+        return dateFormatter.format(calendar.time)
     }
 }
