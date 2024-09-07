@@ -110,6 +110,7 @@ private fun OnMapScreen(
                 } else {
                     for (userPhoto in uiState.photoMarker) {
                         DisplayPhoto(
+                            id = userPhoto.id,
                             uri = userPhoto.uri,
                             lan = userPhoto.gpsLatitude,
                             lon = userPhoto.gpsLongitude
@@ -305,6 +306,7 @@ private fun AddPhotoActionButton(
 @OptIn(ExperimentalNaverMapApi::class)
 @Composable
 fun DisplayPhoto(
+    id: String,
     uri: Uri,
     lan: Double,
     lon: Double,

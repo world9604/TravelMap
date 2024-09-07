@@ -32,4 +32,12 @@ class UriTypeConverter {
         calendar.time = date
         return calendar
     }
+
+    @TypeConverter
+    fun listStringToString(listString: List<String>): String
+        = listString.joinToString(",")
+
+    @TypeConverter
+    fun stringToListString(string: String): List<String>
+        = string.split(",")
 }
