@@ -4,6 +4,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -40,7 +42,7 @@ fun DetailPhotoMarkerScreen(
     val diary by remember { mutableStateOf("") }
 
     val modifier = Modifier
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.detailPhotoMarkerUiState.collectAsState()
 
     when (uiState) {
         is DetailPhotoMarkerUiState.Error -> TODO()
@@ -111,16 +113,23 @@ private fun PlaceholderContents() {
 
 @Composable
 fun MainPhoto(
-    imageUrl: String,
+    imageUrls: List<String>,
     modifier: Modifier = Modifier
 ) {
-    Image(
-        painter = rememberImagePainter(data = imageUrl),
-        contentDescription = "Detail Photo",
+    val pagerState = rememberPagerState(pageCount = { imageUrls.size })
+
+    HorizontalPager(
+        state = pagerState,
         modifier = modifier
             .padding(start = 10.dp, end = 10.dp)
-            .fillMaxWidth()
-            .shadow(10.dp, RoundedCornerShape(10.dp))
-            .clip(RoundedCornerShape(10.dp))
-    )
+    ) { page ->
+        Image(
+            painter = rememberImagePainter(data = imageUrls[page]),
+            contentDescription = "Detail Photo",
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(10.dp, RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(10.dp))
+        )
+    }
 }

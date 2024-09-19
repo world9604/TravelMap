@@ -64,7 +64,8 @@ import java.io.File
 
 @Composable
 fun MapScreen(
-    viewModel: MapViewModel = hiltViewModel()
+    viewModel: MapViewModel = hiltViewModel(),
+    onNavigateToDetailPhotoMarker : (String) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
     Scaffold(
@@ -80,7 +81,7 @@ fun MapScreen(
             }
         }
     ) { contentPadding ->
-        OnMapScreen(contentPadding, uiState)
+        OnMapScreen(contentPadding, uiState, onNavigateToDetailPhotoMarker)
         OutsideMapScreen(uiState)
     }
 }
@@ -100,7 +101,8 @@ private fun OutsideMapScreen(uiState: MapUiState) {
 @OptIn(ExperimentalNaverMapApi::class)
 private fun OnMapScreen(
     contentPadding: PaddingValues,
-    uiState: MapUiState = MapUiState.Loading
+    uiState: MapUiState = MapUiState.Loading,
+    onPhotoClick: (String) -> Unit
 ) {
     NaverMap(contentPadding = contentPadding) {
         when (uiState) {
@@ -113,7 +115,8 @@ private fun OnMapScreen(
                             id = userPhoto.id,
                             uri = userPhoto.uri,
                             lan = userPhoto.gpsLatitude,
-                            lon = userPhoto.gpsLongitude
+                            lon = userPhoto.gpsLongitude,
+                            onPhotoClick = { onPhotoClick(userPhoto.id) }
                         )
                     }
                 }
@@ -310,17 +313,22 @@ fun DisplayPhoto(
     uri: Uri,
     lan: Double,
     lon: Double,
+    onPhotoClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    Marker(
-        state = rememberMarkerState(position = LatLng(lan, lon)),
-        icon = OverlayImage.fromView(createCustomView(context, uri)),
-        /*width = dimensionResource(R.dimen.photo_marker_size),
-        height = dimensionResource(R.dimen.photo_marker_size),
-        isFlat = true,*/
-        angle = 90f,
-    )
+    Button(
+        onClick = { onPhotoClick() }
+    ) {
+        Marker(
+            state = rememberMarkerState(position = LatLng(lan, lon)),
+            icon = OverlayImage.fromView(createCustomView(context, uri)),
+            /*width = dimensionResource(R.dimen.photo_marker_size),
+            height = dimensionResource(R.dimen.photo_marker_size),
+            isFlat = true,*/
+            angle = 90f,
+        )
+    }
 }
 
 fun createCustomView(

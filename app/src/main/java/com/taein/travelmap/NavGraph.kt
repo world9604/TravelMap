@@ -2,9 +2,11 @@ package com.taein.travelmap
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.taein.travelmap.detailHotPlace.DetailHotPlaceScreen
 import com.taein.travelmap.detailPhotoMarker.DetailPhotoMarkerScreen
 import com.taein.travelmap.map.MapScreen
@@ -85,9 +87,18 @@ fun NavGraph(
         modifier = modifier,
     ) {
         composable(Destination.Map.route) {
-            MapScreen()
+            MapScreen(
+                onNavigateToDetailPhotoMarker = { markerId: String ->
+                    navController.navigate(route = "DetailPhotoMarker/$markerId")
+                }
+            )
         }
-        composable(Destination.DetailPhotoMarker.route) {
+        composable(
+            route = "DetailPhotoMarker/{$markerIdArg}",
+            arguments = listOf(
+                navArgument(markerIdArg) { type = NavType.StringType }
+            )
+        ) {
             DetailPhotoMarkerScreen()
         }
         composable(Destination.DetailHotPlace.route) {
@@ -95,3 +106,6 @@ fun NavGraph(
         }
     }
 }
+
+internal const val markerIdArg = "markerId"
+

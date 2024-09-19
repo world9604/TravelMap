@@ -38,6 +38,10 @@ class MapViewModel @Inject constructor(
             initialValue = MapUiState.PhotoNotReady,
         )
 
+    fun onPhotoClick(markerId: String) {
+
+    }
+
     fun processImageUri(context: Context, uri: Uri) {
         val currentLocation = getCurrentLocation(context)
         if (currentLocation != null) {

@@ -1,11 +1,12 @@
 package com.taein.travelmap.detailPhotoMarker
 
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.taein.travelmap.markerIdArg
 import com.taein.travelmap.repository.diary.DiaryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -17,15 +18,16 @@ import javax.inject.Inject
 
 @HiltViewModel
 class DetailPhotoMarkerViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val repository: DiaryRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<DetailPhotoMarkerUiState>(DetailPhotoMarkerUiState.NotShown)
-    val uiState = repository.observe(id)
+    private val markerId: String = checkNotNull(savedStateHandle[markerIdArg])
+
+    val detailPhotoMarkerUiState = repository.observe(markerId)
         .map { diary ->
             DetailPhotoMarkerUiState.PhotoUploadSuccess(diary)
-        }
-        .stateIn(
+        }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = DetailPhotoMarkerUiState.Loading,
