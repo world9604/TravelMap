@@ -18,7 +18,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class DetailPhotoMarkerViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
+    private val savedStateHandle: SavedStateHandle,
     private val repository: DiaryRepository
 ) : ViewModel() {
 

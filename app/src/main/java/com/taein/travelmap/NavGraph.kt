@@ -73,7 +73,7 @@ enum class Destination(val route: String) {
 
 @Composable
 fun NavGraph(
-    startDestination: String = Destination.DetailPhotoMarker.route,
+    startDestination: String = Destination.Map.route,
     modifier: Modifier = Modifier
 ) {
     val navController = rememberNavController()
@@ -86,22 +86,26 @@ fun NavGraph(
         startDestination = startDestination,
         modifier = modifier,
     ) {
-        composable(Destination.Map.route) {
+        composable(
+            route = Destination.Map.route
+        ) {
             MapScreen(
-                onNavigateToDetailPhotoMarker = { markerId: String ->
-                    navController.navigate(route = "DetailPhotoMarker/$markerId")
+                onNavigateToDetailPhotoMarker = { markerId ->
+                    navController.navigate(route = "${Destination.DetailPhotoMarker.route}/$markerId")
                 }
             )
         }
         composable(
-            route = "DetailPhotoMarker/{$markerIdArg}",
+            route = "${Destination.DetailPhotoMarker.route}/{$markerIdArg}",
             arguments = listOf(
                 navArgument(markerIdArg) { type = NavType.StringType }
             )
         ) {
             DetailPhotoMarkerScreen()
         }
-        composable(Destination.DetailHotPlace.route) {
+        composable(
+            route = Destination.DetailHotPlace.route
+        ) {
             DetailHotPlaceScreen()
         }
     }

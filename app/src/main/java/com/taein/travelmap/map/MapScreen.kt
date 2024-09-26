@@ -49,7 +49,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import androidx.core.net.toFile
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
@@ -186,7 +185,7 @@ private fun CameraActionButton(
             if (success) {
                 MediaScannerConnection.scanFile(
                     context,
-                    arrayOf(uri.toFile().absolutePath),
+                    arrayOf(uri.path),
                     null
                 ) { path, it ->
                     Log.d(AppArgs.TAG, "MediaScanner scanned: $path -> $it")

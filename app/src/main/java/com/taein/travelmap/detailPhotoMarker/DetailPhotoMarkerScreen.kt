@@ -106,7 +106,7 @@ private fun TextContents(text: String, modifier: Modifier = Modifier) {
 @Composable
 private fun PlaceholderContents() {
     Text(
-        text = "그날의 기억을 적어주세요.\n그날의 날씨, 맛, 향, 감정정, 사람들...\n어떤것이든 좋아요!\n남는건 추억뿐일거에요..☺",
+        text = "그날의 기억을 적어주세요.\n그날의 날씨, 맛, 향, 감정, 사람들...\n어떤것이든 좋아요!\n남는건 추억뿐일거에요..☺",
         color = MaterialTheme.colorScheme.onSecondary
     )
 }

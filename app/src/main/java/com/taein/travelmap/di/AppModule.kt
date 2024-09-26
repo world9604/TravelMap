@@ -3,7 +3,10 @@ package com.taein.travelmap.di
 import android.content.Context
 import androidx.room.Room
 import com.taein.travelmap.database.AppDatabase
+import com.taein.travelmap.database.DiaryDao
 import com.taein.travelmap.database.PhotoMarkerDao
+import com.taein.travelmap.repository.diary.DiaryRepository
+import com.taein.travelmap.repository.diary.OfflineFirstDiaryRepository
 import com.taein.travelmap.repository.photoMarker.OfflineFirstPhotoMarkerRepository
 import com.taein.travelmap.repository.photoMarker.PhotoMarkerRepository
 import dagger.Module
@@ -20,7 +23,9 @@ object AppModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase {
-        return Room.databaseBuilder(context, AppDatabase::class.java, "photo_markers.db").build()
+        return Room.databaseBuilder(context, AppDatabase::class.java, "photo_markers.db")
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides
@@ -31,5 +36,15 @@ object AppModule {
     @Provides
     fun providePhotoMarkerRepository(photoMarkerDao: PhotoMarkerDao): PhotoMarkerRepository {
         return OfflineFirstPhotoMarkerRepository(photoMarkerDao)
+    }
+
+    @Provides
+    fun provideDiaryDao(database: AppDatabase): DiaryDao {
+        return database.diaryDao()
+    }
+
+    @Provides
+    fun provideOfflineFirstDiaryRepository(diaryDao: DiaryDao): DiaryRepository {
+        return OfflineFirstDiaryRepository(diaryDao)
     }
 }
