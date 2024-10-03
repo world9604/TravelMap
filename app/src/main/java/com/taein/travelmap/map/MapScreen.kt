@@ -187,9 +187,9 @@ private fun CameraActionButton(
                     context,
                     arrayOf(uri.path),
                     null
-                ) { path, it ->
-                    Log.d(AppArgs.TAG, "MediaScanner scanned: $path -> $it")
-                    viewModel.processImageUri(context, it)
+                ) { path, uriType ->
+                    Log.d(AppArgs.TAG, "MediaScanner scanned: $path -> $uriType")
+                    viewModel.processImageUri(context, uri)
                 }
             } else {
                 Log.d(AppArgs.TAG, "CameraActionButton2 fail")

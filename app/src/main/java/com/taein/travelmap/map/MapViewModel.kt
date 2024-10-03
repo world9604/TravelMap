@@ -1,10 +1,9 @@
 package com.taein.travelmap.map
 
-import android.annotation.SuppressLint
 import android.content.Context
-import android.location.Location
 import android.location.LocationManager
 import android.net.Uri
+import android.os.CancellationSignal
 import android.util.Log
 import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.ViewModel
@@ -16,7 +15,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Inject
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlin.random.Random
 
 
@@ -43,18 +45,21 @@ class MapViewModel @Inject constructor(
     }
 
     fun processImageUri(context: Context, uri: Uri) {
-        val currentLocation = getCurrentLocation(context)
-        if (currentLocation != null) {
-            val (latitude, longitude) = currentLocation
-            addLocationToImage(context, uri, latitude, longitude)
-        } else {
-            _uiState.value = MapUiState.PhotoNotLoad
-            return
-        }
-
-        createUserPhoto(context, uri)?.let {
-            viewModelScope.launch {
-                repository.addPhotoMarker(it)
+        viewModelScope.launch {
+            try {
+                val currentLocation = getCurrentLocation(context)
+                if (currentLocation != null) {
+                    val (latitude, longitude) = currentLocation
+                    addLocationToImage(context, uri, latitude, longitude)
+                    createUserPhoto(context, uri)?.let {
+                        repository.addPhotoMarker(it)
+                    }
+                } else {
+                    _uiState.value = MapUiState.PhotoNotLoad
+                    return@launch
+                }
+            } catch (e: SecurityException) {
+                // 권한 오류 처리
             }
         }
     }
@@ -94,7 +99,7 @@ class MapViewModel @Inject constructor(
         }.getOrNull()
     }
 
-    @SuppressLint("MissingPermission")
+    /*@SuppressLint("MissingPermission")
     fun getCurrentLocation(context: Context): Pair<Double, Double>? {
         val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
         val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
@@ -107,6 +112,33 @@ class MapViewModel @Inject constructor(
         }
 
         return location?.let { Pair(it.latitude, it.longitude) }
+    }*/
+
+    private suspend fun getCurrentLocation(context: Context): Pair<Double, Double>? {
+        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val cancellationSignal = CancellationSignal()
+
+        return suspendCancellableCoroutine { continuation ->
+            try {
+                locationManager.getCurrentLocation(
+                    LocationManager.GPS_PROVIDER,
+                    cancellationSignal,
+                    context.mainExecutor
+                ) { location ->
+                    if (location != null) {
+                        continuation.resume(Pair(location.latitude, location.longitude))
+                    } else {
+                        continuation.resume(null)
+                    }
+                }
+            } catch (e: SecurityException) {
+                continuation.resumeWithException(e)
+            }
+
+            continuation.invokeOnCancellation {
+                cancellationSignal.cancel()
+            }
+        }
     }
 
     private fun addLocationToImage(context: Context, imageUri: Uri, latitude: Double, longitude: Double) {
