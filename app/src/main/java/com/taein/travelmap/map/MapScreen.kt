@@ -45,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -316,18 +317,29 @@ fun DisplayPhoto(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    Button(
+
+    //아래 Button 전체를 주석 처리하면 에러가 발생하지 않는다
+    /*Button(
         onClick = { onPhotoClick() }
     ) {
         Marker(
             state = rememberMarkerState(position = LatLng(lan, lon)),
             icon = OverlayImage.fromView(createCustomView(context, uri)),
-            /*width = dimensionResource(R.dimen.photo_marker_size),
+            width = dimensionResource(R.dimen.photo_marker_size),
             height = dimensionResource(R.dimen.photo_marker_size),
-            isFlat = true,*/
+            isFlat = true,
             angle = 90f,
         )
-    }
+    }*/
+
+    Marker(
+        state = rememberMarkerState(position = LatLng(lan, lon)),
+        icon = OverlayImage.fromView(createCustomView(context, uri)),
+        width = dimensionResource(R.dimen.photo_marker_size),
+        height = dimensionResource(R.dimen.photo_marker_size),
+        isFlat = true,
+        angle = 90f,
+    )
 }
 
 fun createCustomView(
