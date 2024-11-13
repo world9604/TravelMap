@@ -335,6 +335,7 @@ fun DisplayPhoto(
     Marker(
         state = rememberMarkerState(position = LatLng(lan, lon)),
         icon = OverlayImage.fromView(createCustomView(context, uri)),
+        onClick = { onPhotoClick(); true },
         width = dimensionResource(R.dimen.photo_marker_size),
         height = dimensionResource(R.dimen.photo_marker_size),
         isFlat = true,

@@ -12,6 +12,7 @@ import com.taein.travelmap.repository.photoMarker.PhotoMarkerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -28,20 +29,19 @@ class MapViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<MapUiState>(MapUiState.PhotoNotReady)
-    //val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
-    val uiState = repository.observeAll()
-        .map{ photoMarkers ->
-            if (photoMarkers.isEmpty()) MapUiState.PhotoNotLoad
-            else MapUiState.Success(photoMarkers)
+    val uiState: StateFlow<MapUiState> = _uiState
+
+    init {
+        viewModelScope.launch {
+            repository.observeAll()
+                .map { photoMarkers ->
+                    if (photoMarkers.isEmpty()) MapUiState.PhotoNotLoad
+                    else MapUiState.Success(photoMarkers)
+                }
+                .collect { newState ->
+                    _uiState.value = newState
+                }
         }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = MapUiState.PhotoNotReady,
-        )
-
-    fun onPhotoClick(markerId: String) {
-
     }
 
     fun processImageUri(context: Context, uri: Uri) {

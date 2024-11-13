@@ -1,5 +1,6 @@
 package com.taein.travelmap
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
@@ -91,6 +92,7 @@ fun NavGraph(
         ) {
             MapScreen(
                 onNavigateToDetailPhotoMarker = { markerId ->
+                    Log.d(AppArgs.TAG, "markerId: $markerId")
                     navController.navigate(route = "${Destination.DetailPhotoMarker.route}/$markerId")
                 }
             )

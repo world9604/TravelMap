@@ -22,7 +22,7 @@ class DetailPhotoMarkerViewModel @Inject constructor(
     private val repository: DiaryRepository
 ) : ViewModel() {
 
-    private val markerId: String = checkNotNull(savedStateHandle[markerIdArg])
+    private val markerId: String = savedStateHandle[markerIdArg] ?: ""
 
     val detailPhotoMarkerUiState = repository.observe(markerId)
         .map { diary ->
