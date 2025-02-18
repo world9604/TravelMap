@@ -3,7 +3,6 @@ package com.taein.travelmap.repository.diary
 import com.taein.travelmap.database.DiaryDao
 import com.taein.travelmap.detailPhotoMarker.Diary
 import com.taein.travelmap.detailPhotoMarker.asEntity
-import com.taein.travelmap.model.DiaryEntity
 import com.taein.travelmap.model.asExternalModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -21,11 +20,17 @@ class OfflineFirstDiaryRepository @Inject constructor(
         diaryDao.insertDiaries(diaries.map(Diary::asEntity))
     }
 
-    override fun observeAll(): Flow<List<Diary>> =
+    override fun observeAll(): Flow<List<Diary?>> =
         diaryDao.getAllDiaries()
-            .map { it.map(DiaryEntity::asExternalModel) }
+            .map { diaryList ->
+                diaryList.map { diaryEntity ->
+                    diaryEntity?.asExternalModel()
+                }
+            }
 
-    override fun observe(id: String): Flow<Diary> =
+    override fun observe(id: String): Flow<Diary?> =
         diaryDao.getDiary(id)
-            .map { it.asExternalModel() }
+            .map { diaryEntity ->
+                diaryEntity?.asExternalModel()
+            }
 }

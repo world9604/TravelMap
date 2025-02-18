@@ -40,4 +40,15 @@ class UriTypeConverter {
     @TypeConverter
     fun stringToListString(string: String): List<String>
         = string.split(",")
+
+    @TypeConverter
+    fun fromUriList(uriList: List<Uri>): String {
+        return uriList.joinToString(separator = ",") { it.toString() }
+    }
+
+    @TypeConverter
+    fun toUriList(data: String): List<Uri> {
+        if (data.isEmpty()) return emptyList()
+        return data.split(",").map { Uri.parse(it) }
+    }
 }

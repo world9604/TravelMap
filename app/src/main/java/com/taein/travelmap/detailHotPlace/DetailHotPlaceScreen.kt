@@ -2,7 +2,6 @@ package com.taein.travelmap.detailHotPlace
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,17 +9,23 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.compose.rememberAsyncImagePainter
 import coil.compose.rememberImagePainter
+import com.taein.travelmap.R
 
 @Preview(showBackground = true)
 @Composable
@@ -42,6 +47,7 @@ fun DetailHotPlaceScreen() {
     )
 
     Column {
+        Text(text = timestamp, style = MaterialTheme.typography.bodyMedium)
         MainPhotoSlider(mainImage, timestamp, description)
         Spacer(modifier = Modifier.height(16.dp))
         Text(text = description, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(16.dp))
@@ -52,36 +58,38 @@ fun DetailHotPlaceScreen() {
 
 @Composable
 fun MainPhotoSlider(imageUrl: String, timestamp: String, description: String) {
-    Box(modifier = Modifier.fillMaxWidth()) {
+    val painter = if (LocalInspectionMode.current) {
+        painterResource(id = R.drawable.puppy)
+    } else {
+        rememberAsyncImagePainter(model = imageUrl)
+    }
+
+    Column(
+        modifier = Modifier
+            .background(Color(0x80000000))
+            .clip(RoundedCornerShape(8.dp))
+    ) {
         Image(
-            painter = rememberImagePainter(data = imageUrl),
+            painter = painter,
             contentDescription = null,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .align(Alignment.Center)
-        )
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp)
-                .background(Color(0x80000000))
-                .padding(8.dp)
-        ) {
-            Text(text = timestamp, color = Color.White, style = MaterialTheme.typography.bodyMedium)
-            Text(text = description, color = Color.White, style = MaterialTheme.typography.bodyMedium)
-        }
+                .height(300.dp))
     }
 }
 
 @Composable
 fun SubPhotoSlider(images: List<String>) {
+    val placeholderImages = listOf(
+        "drawable/puppy",
+        "drawable/puppy2",
+    )
+    val displayImages = if (LocalInspectionMode.current) placeholderImages else images
+
     LazyRow {
-        items(images.size) { index ->
-            val imageUrl = images[index]
+        items(displayImages.size) { imageUrl ->
             Image(
-                painter = rememberImagePainter(data = imageUrl),
+                painter = rememberAsyncImagePainter(model = imageUrl),
                 contentDescription = null,
                 modifier = Modifier
                     .size(100.dp)
@@ -89,5 +97,28 @@ fun SubPhotoSlider(images: List<String>) {
                     .clip(RoundedCornerShape(8.dp))
             )
         }
+    }
+}
+
+@Composable
+fun SubPhotoSlider(
+    imageUrls: List<String>,
+    modifier: Modifier = Modifier
+) {
+    val pagerState = rememberPagerState(pageCount = { imageUrls.size })
+
+    HorizontalPager(
+        state = pagerState,
+        modifier = modifier
+            .padding(start = 10.dp, end = 10.dp)
+    ) { page ->
+        Image(
+            painter = rememberImagePainter(data = imageUrls[page]),
+            contentDescription = "Sub Photo Slider",
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(10.dp, RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(10.dp))
+        )
     }
 }

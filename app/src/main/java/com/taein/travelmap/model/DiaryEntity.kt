@@ -1,5 +1,6 @@
 package com.taein.travelmap.model
 
+import android.net.Uri
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.taein.travelmap.detailPhotoMarker.Diary
@@ -7,7 +8,7 @@ import com.taein.travelmap.detailPhotoMarker.Diary
 @Entity(tableName = "diaries")
 data class DiaryEntity(
     @PrimaryKey val id: String,
-    val photo: List<String>,
+    val photo: List<Uri>,
     val date: String,
     val contents: String
 )

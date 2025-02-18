@@ -16,8 +16,8 @@ interface DiaryDao {
     suspend fun insertDiaries(photoMarkers: List<DiaryEntity>)
 
     @Query("SELECT * FROM diaries")
-    fun getAllDiaries(): Flow<List<DiaryEntity>>
+    fun getAllDiaries(): Flow<List<DiaryEntity?>>
 
     @Query("SELECT * FROM diaries WHERE id = :id")
-    fun getDiary(id: String): Flow<DiaryEntity>
+    fun getDiary(id: String): Flow<DiaryEntity?>
 }
