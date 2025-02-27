@@ -5,9 +5,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -30,20 +30,23 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberImagePainter
+import com.taein.travelmap.ui.theme.TravelMapTheme
 
 
 @Preview(showBackground = true)
 @Composable
 fun DetailPhotoMarkerScreenPreview() {
-    /*TravelMapTheme {
+    TravelMapTheme {
         val fakeDiary = Diary(
             id = "12312355",
             date = "2023102312030",
-            photo = listOf("https://example.com/photo.jpg"),
+            photo = listOf(
+                Uri.parse("https://i.namu.wiki/i/kR2p0TduTIsGOT09zbjEBk2Cd9qMOefNPhAuHgZZUBPgEZt3eWYnah8ju8VYrrfAn-dATZJYvXIvmPG4UaS4aaRO5-ypd8wiaE6t5MZ0Ms7y3jUFpjaAEcNsLx52I60ataqwX61KyhlI4ZSO8YRiVw.webp")
+            ),
             contents = "여기 내용을 입력하세요"
         )
         DetailPhotoMarker(diary = fakeDiary)
-    }*/
+    }
 }
 
 
@@ -155,7 +158,7 @@ fun MainPhoto(
         modifier = modifier
             .padding(horizontal = 10.dp)
             .fillMaxWidth()
-            .height(500.dp)
+            .fillMaxHeight(0.55f)
     ) { page ->
         Image(
             painter = rememberImagePainter(data = imageUris[page]),
@@ -163,6 +166,7 @@ fun MainPhoto(
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxWidth()
+                //.aspectRatio(16f / 9f)
                 .shadow(5.dp, RoundedCornerShape(10.dp))
                 .clip(RoundedCornerShape(10.dp))
         )
