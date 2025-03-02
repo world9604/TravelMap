@@ -53,8 +53,12 @@ import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
+import com.naver.maps.map.compose.LocationTrackingMode
+import com.naver.maps.map.compose.MapProperties
+import com.naver.maps.map.compose.MapUiSettings
 import com.naver.maps.map.compose.Marker
 import com.naver.maps.map.compose.NaverMap
+import com.naver.maps.map.compose.rememberFusedLocationSource
 import com.naver.maps.map.compose.rememberMarkerState
 import com.naver.maps.map.overlay.OverlayImage
 import com.taein.travelmap.AppArgs
@@ -104,25 +108,33 @@ private fun OnMapScreen(
     uiState: MapUiState = MapUiState.Loading,
     onPhotoClick: (String) -> Unit
 ) {
-    NaverMap(contentPadding = contentPadding) {
-        when (uiState) {
-            is MapUiState.Success -> {
-                if (uiState.isEmpty()) {
-                    Unit
-                } else {
-                    for (userPhoto in uiState.photoMarker) {
-                        DisplayPhoto(
-                            id = userPhoto.id,
-                            uri = userPhoto.uri,
-                            lan = userPhoto.gpsLatitude,
-                            lon = userPhoto.gpsLongitude,
-                            onPhotoClick = { onPhotoClick(userPhoto.id) }
-                        )
+    NaverMap(
+        locationSource = rememberFusedLocationSource(),
+        properties = MapProperties(
+            locationTrackingMode = LocationTrackingMode.Follow,
+        ),
+        uiSettings = MapUiSettings(
+            isLocationButtonEnabled = true,
+        ),
+        contentPadding = contentPadding) {
+            when (uiState) {
+                is MapUiState.Success -> {
+                    if (uiState.isEmpty()) {
+                        Unit
+                    } else {
+                        for (userPhoto in uiState.photoMarker) {
+                            DisplayPhoto(
+                                id = userPhoto.id,
+                                uri = userPhoto.uri,
+                                lan = userPhoto.gpsLatitude,
+                                lon = userPhoto.gpsLongitude,
+                                onPhotoClick = { onPhotoClick(userPhoto.id) }
+                            )
+                        }
                     }
                 }
+                else -> Unit
             }
-            else -> Unit
-        }
     }
 }
 
