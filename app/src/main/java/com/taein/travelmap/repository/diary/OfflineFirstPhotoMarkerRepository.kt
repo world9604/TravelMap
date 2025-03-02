@@ -33,4 +33,8 @@ class OfflineFirstDiaryRepository @Inject constructor(
             .map { diaryEntity ->
                 diaryEntity?.asExternalModel()
             }
+
+    override suspend fun updateDiary(diary: Diary) {
+        diaryDao.updateDiary(diary.asEntity())
+    }
 }

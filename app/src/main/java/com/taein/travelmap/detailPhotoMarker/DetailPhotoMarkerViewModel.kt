@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -64,5 +65,15 @@ class DetailPhotoMarkerViewModel @Inject constructor(
 
     fun getFormattedDate(calendar: Calendar): String {
         return dateFormatter.format(calendar.time)
+    }
+
+    fun updateDiaryContents(newContents: String) {
+        viewModelScope.launch {
+            val currentDiary = (detailPhotoMarkerUiState.value as? DetailPhotoMarkerUiState.PhotoUploadSuccess)?.diary
+            currentDiary?.let { diary ->
+                val updatedDiary = diary.copy(contents = newContents)
+                diaryRepository.updateDiary(updatedDiary)
+            }
+        }
     }
 }

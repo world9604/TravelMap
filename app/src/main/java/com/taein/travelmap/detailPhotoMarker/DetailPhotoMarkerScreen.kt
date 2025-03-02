@@ -20,6 +20,9 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,10 +48,9 @@ fun DetailPhotoMarkerScreenPreview() {
             ),
             contents = "여기 내용을 입력하세요"
         )
-        DetailPhotoMarker(diary = fakeDiary)
+        DetailPhotoMarker(diary = fakeDiary, onDiaryContentsChange = {})
     }
 }
-
 
 @Composable
 fun DetailPhotoMarkerScreen(
@@ -63,7 +65,13 @@ fun DetailPhotoMarkerScreen(
         DetailPhotoMarkerUiState.NotShown -> TODO()
         is DetailPhotoMarkerUiState.PhotoUploadSuccess -> {
             val successState = uiState as DetailPhotoMarkerUiState.PhotoUploadSuccess
-            DetailPhotoMarker(successState.diary, modifier)
+            DetailPhotoMarker(
+                diary = successState.diary,
+                modifier = modifier,
+                onDiaryContentsChange = { newText ->
+                    viewModel.updateDiaryContents(newText)
+                }
+            )
         }
     }
 }
@@ -83,12 +91,15 @@ fun LoadingScreen() {
 @Composable
 private fun DetailPhotoMarker(
     diary: Diary,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onDiaryContentsChange: (String) -> Unit
 ) {
     Column {
         Date(diary.date, modifier.padding(top = 20.dp))
         MainPhoto(diary.photo, modifier.padding(top = 10.dp))
-        TextContents(diary.contents, modifier.padding(top = 10.dp))
+        TextContents(diary.contents, modifier.padding(top = 10.dp)) { newContents ->
+            onDiaryContentsChange(newContents)
+        }
     }
 }
 
@@ -96,32 +107,24 @@ private fun DetailPhotoMarker(
 private fun Date(date: String, modifier: Modifier = Modifier) {
     Text(
         modifier = modifier.padding(start = 20.dp, end = 20.dp),
-        text = formatDateTime(date),
+        text = date,
         style = MaterialTheme.typography.labelSmall
     )
 }
 
-fun formatDateTime(input: String): String {
-    if (input.length < 12) {
-        throw IllegalArgumentException("입력 문자열은 최소 12자리 이상이어야 합니다.")
-    }
-    val normalized = input.substring(0, 12)
-
-    val year = normalized.substring(0, 4)
-    val month = normalized.substring(4, 6)
-    val day = normalized.substring(6, 8)
-    val hour = normalized.substring(8, 10)
-    val minute = normalized.substring(10, 12)
-
-    return "${year}년 ${month}월 ${day}일 $hour:$minute"
-}
-
 @Composable
-private fun TextContents(text: String, modifier: Modifier = Modifier) {
-    var text1 = text
+private fun TextContents(
+    initialText: String,
+    modifier: Modifier = Modifier,
+    onTextChanged: (String) -> Unit
+) {
+    var observerText by remember { mutableStateOf(initialText) }
     TextField(
-        value = "",
-        onValueChange = { text1 = it },
+        value = observerText,
+        onValueChange = {
+            observerText = it
+            onTextChanged(it)
+        },
         placeholder = { PlaceholderContents() },
         modifier = modifier,
         textStyle = MaterialTheme.typography.bodyLarge,

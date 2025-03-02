@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.taein.travelmap.model.DiaryEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -20,4 +21,7 @@ interface DiaryDao {
 
     @Query("SELECT * FROM diaries WHERE id = :id")
     fun getDiary(id: String): Flow<DiaryEntity?>
+
+    @Update
+    suspend fun updateDiary(diary: DiaryEntity)
 }
