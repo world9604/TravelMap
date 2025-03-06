@@ -58,6 +58,7 @@ import com.naver.maps.map.compose.MapProperties
 import com.naver.maps.map.compose.MapUiSettings
 import com.naver.maps.map.compose.Marker
 import com.naver.maps.map.compose.NaverMap
+import com.naver.maps.map.compose.rememberCameraPositionState
 import com.naver.maps.map.compose.rememberFusedLocationSource
 import com.naver.maps.map.compose.rememberMarkerState
 import com.naver.maps.map.overlay.OverlayImage
@@ -108,14 +109,38 @@ private fun OnMapScreen(
     uiState: MapUiState = MapUiState.Loading,
     onPhotoClick: (String) -> Unit
 ) {
+    val (selectedOption, onOptionSelected) = remember { mutableStateOf(2) }
+
+    val locationTrackingMode = when (selectedOption) {
+        0 -> LocationTrackingMode.None
+        1 -> LocationTrackingMode.NoFollow
+        2 -> LocationTrackingMode.Follow
+        3 -> LocationTrackingMode.Face
+        else -> throw IllegalStateException()
+    }
+    val isCompassEnabled = when (locationTrackingMode) {
+        LocationTrackingMode.Follow,
+        LocationTrackingMode.Face -> true
+        else -> false
+    }
+    val cameraPositionState = rememberCameraPositionState()
     NaverMap(
-        locationSource = rememberFusedLocationSource(),
+        cameraPositionState = cameraPositionState,
+        locationSource = rememberFusedLocationSource(
+            isCompassEnabled = isCompassEnabled
+        ),
         properties = MapProperties(
-            locationTrackingMode = LocationTrackingMode.Follow,
+            locationTrackingMode = locationTrackingMode,
         ),
         uiSettings = MapUiSettings(
             isLocationButtonEnabled = true,
+            isCompassEnabled = isCompassEnabled,
         ),
+        onOptionChange = {
+            cameraPositionState.locationTrackingMode?.let {
+                onOptionSelected(it.ordinal)
+            }
+        },
         contentPadding = contentPadding) {
             when (uiState) {
                 is MapUiState.Success -> {
