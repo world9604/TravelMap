@@ -47,6 +47,7 @@ androidx-fragment = { group = "androidx.fragment", name = "fragment", version.re
 androidx-cardview = { group = "androidx.cardview", name = "cardview", version.ref = "cardview" }
 androidx-material3-android = { group = "androidx.compose.material3", name = "material3-android", version.ref = "material3-android" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+naver-map-clustering = "io.github.ParkSangGwon:tedclustering-naver:1.0.2"
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

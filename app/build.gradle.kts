@@ -69,6 +69,7 @@ dependencies {
     implementation(libs.androidx.cardview)
     implementation(libs.androidx.material3.android)
     implementation(libs.material)
+    implementation(libs.naver.map.clustering)
     ksp(libs.hilt.compiler)
     implementation("androidx.hilt:hilt-navigation-compose:1.0.0")
     implementation(libs.map.sdk)
