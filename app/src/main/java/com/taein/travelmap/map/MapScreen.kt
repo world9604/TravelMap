@@ -10,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.TextView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.cardview.widget.CardView
@@ -124,6 +125,7 @@ private fun OnMapScreen(
         else -> false
     }
     val cameraPositionState = rememberCameraPositionState()
+
     NaverMap(
         cameraPositionState = cameraPositionState,
         locationSource = rememberFusedLocationSource(
@@ -149,10 +151,7 @@ private fun OnMapScreen(
                     } else {
                         for (userPhoto in uiState.photoMarker) {
                             DisplayPhoto(
-                                id = userPhoto.id,
-                                uri = userPhoto.uri,
-                                lan = userPhoto.gpsLatitude,
-                                lon = userPhoto.gpsLongitude,
+                                userPhoto = userPhoto,
                                 onPhotoClick = { onPhotoClick(userPhoto.id) }
                             )
                         }
@@ -346,10 +345,7 @@ private fun AddPhotoActionButton(
 @OptIn(ExperimentalNaverMapApi::class)
 @Composable
 fun DisplayPhoto(
-    id: String,
-    uri: Uri,
-    lan: Double,
-    lon: Double,
+    userPhoto: PhotoMarker,
     onPhotoClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -370,8 +366,8 @@ fun DisplayPhoto(
     }*/
 
     Marker(
-        state = rememberMarkerState(position = LatLng(lan, lon)),
-        icon = OverlayImage.fromView(createCustomView(context, uri)),
+        state = rememberMarkerState(position = LatLng(userPhoto.gpsLatitude, userPhoto.gpsLongitude)),
+        icon = OverlayImage.fromView(createCustomView(context, userPhoto.uri, userPhoto.markerTitle)),
         onClick = { onPhotoClick(); true },
         width = dimensionResource(R.dimen.photo_marker_size),
         height = dimensionResource(R.dimen.photo_marker_size),
@@ -382,12 +378,22 @@ fun DisplayPhoto(
 
 fun createCustomView(
     context: Context,
-    uri: Uri
+    uri: Uri,
+    title: String?
 ): View {
     val inflater = LayoutInflater.from(context)
     val rootView = inflater.inflate(R.layout.user_photo_view, null) as ViewGroup
-    val imageView = rootView.findViewById<ImageView>(R.id.user_photo)
-    imageView.setImageURI(uri)
+    val photoMarker = rootView.findViewById<ImageView>(R.id.user_photo)
+    photoMarker.setImageURI(uri)
+
+    title?.takeIf {
+        it.isNotEmpty()
+    }?.let {
+        rootView.findViewById<TextView>(R.id.marker_title).apply {
+            visibility = View.VISIBLE
+            text = it
+        }
+    }
 
     val cardView = rootView.findViewById<CardView>(R.id.card_view)
     cardView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)

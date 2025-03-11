@@ -22,6 +22,12 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideContext(@ApplicationContext context: Context): Context {
+        return context
+    }
+
+    @Provides
+    @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase {
         return Room.databaseBuilder(context, AppDatabase::class.java, "photo_markers.db")
             .fallbackToDestructiveMigration()

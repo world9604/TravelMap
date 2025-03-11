@@ -8,6 +8,7 @@ import ted.gun0912.clustering.geometry.TedLatLng
 data class PhotoMarker(
     val id: String,
     val uri: Uri,
+    val markerTitle: String,
     val gpsLatitude: Double,
     val gpsLongitude: Double
 ) : TedClusterItem {

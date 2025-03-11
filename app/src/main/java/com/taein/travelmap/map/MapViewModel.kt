@@ -8,13 +8,15 @@ import android.util.Log
 import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.taein.travelmap.R
+import com.taein.travelmap.repository.diary.DiaryRepository
 import com.taein.travelmap.repository.photoMarker.PhotoMarkerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Inject
@@ -25,7 +27,9 @@ import kotlin.random.Random
 
 @HiltViewModel
 class MapViewModel @Inject constructor(
-    private val repository: PhotoMarkerRepository
+    private val photoMarkerRepository: PhotoMarkerRepository,
+    private val diaryRepository: DiaryRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<MapUiState>(MapUiState.PhotoNotReady)
@@ -33,12 +37,20 @@ class MapViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            repository.observeAll()
-                .map { photoMarkers ->
-                    if (photoMarkers.isEmpty()) MapUiState.PhotoNotLoad
-                    else MapUiState.Success(photoMarkers)
-                }
-                .collect { newState ->
+            photoMarkerRepository.observeAll()
+                .map { photoMarkers -> photoMarkers.map { photoMarker ->
+                        val diary = diaryRepository.observe(photoMarker.id).firstOrNull()
+                        if (!diary?.contents.isNullOrBlank()) {
+                            photoMarker.copy(
+                                markerTitle = context.getString(R.string.photo_marker_no_content_text))
+                        } else {
+                            photoMarker
+                        }
+                    }
+                }.map { updatedPhotoMarkers ->
+                    if (updatedPhotoMarkers.isEmpty()) MapUiState.PhotoNotLoad
+                    else MapUiState.Success(updatedPhotoMarkers)
+                }.collect { newState ->
                     _uiState.value = newState
                 }
         }
@@ -52,7 +64,7 @@ class MapViewModel @Inject constructor(
                     val (latitude, longitude) = currentLocation
                     addLocationToImage(context, uri, latitude, longitude)
                     createUserPhoto(context, uri)?.let {
-                        repository.addPhotoMarker(it)
+                        photoMarkerRepository.addPhotoMarker(it)
                     }
                 } else {
                     _uiState.value = MapUiState.PhotoNotLoad
@@ -73,7 +85,7 @@ class MapViewModel @Inject constructor(
 
         if (userPhotoList.isNotEmpty()) {
             viewModelScope.launch {
-                repository.addPhotoMarkers(userPhotoList)
+                photoMarkerRepository.addPhotoMarkers(userPhotoList)
             }
         }
     }
@@ -88,6 +100,7 @@ class MapViewModel @Inject constructor(
                     PhotoMarker(
                         id = Random.nextLong().toString(),
                         uri = uri,
+                        markerTitle = "",
                         gpsLatitude = it[0],
                         gpsLongitude = it[1]
                     )
