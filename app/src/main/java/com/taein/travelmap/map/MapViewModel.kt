@@ -3,7 +3,9 @@ package com.taein.travelmap.map
 import android.content.Context
 import android.location.LocationManager
 import android.net.Uri
+import android.os.Build
 import android.os.CancellationSignal
+import android.provider.MediaStore
 import android.util.Log
 import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.ViewModel
@@ -48,8 +50,7 @@ class MapViewModel @Inject constructor(
                         }
                     }
                 }.map { updatedPhotoMarkers ->
-                    if (updatedPhotoMarkers.isEmpty()) MapUiState.PhotoNotLoad
-                    else MapUiState.Success(updatedPhotoMarkers)
+                    MapUiState.Success(updatedPhotoMarkers)
                 }.collect { newState ->
                     _uiState.value = newState
                 }
@@ -77,6 +78,8 @@ class MapViewModel @Inject constructor(
     }
 
     fun processImageUri(context: Context, uriList: List<Uri>) {
+        if (uriList.isEmpty()) return
+
         _uiState.value = MapUiState.Loading
 
         val userPhotoList = uriList.mapNotNull { uri ->
@@ -87,29 +90,76 @@ class MapViewModel @Inject constructor(
             viewModelScope.launch {
                 photoMarkerRepository.addPhotoMarkers(userPhotoList)
             }
+        } else {
+            _uiState.value = MapUiState.PhotoNotLoad
         }
     }
 
     private fun createUserPhoto(context: Context, uri: Uri): PhotoMarker? {
         return runCatching {
+            // 먼저 EXIF에서 위치 정보 시도
+            var latLong: DoubleArray? = null
+
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
                 val exifInterface = ExifInterface(inputStream)
-                val latLong = exifInterface.latLong
+                latLong = exifInterface.latLong
+            }
 
-                latLong?.let {
-                    PhotoMarker(
-                        id = Random.nextLong().toString(),
-                        uri = uri,
-                        markerTitle = "",
-                        gpsLatitude = it[0],
-                        gpsLongitude = it[1]
-                    )
-                }
+            // EXIF에서 못 찾으면 MediaStore에서 쿼리
+            if (latLong == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                latLong = getLocationFromMediaStore(context, uri)
+            }
+
+            Log.d("MapViewModel", "createUserPhoto - uri: $uri, latLong: ${latLong?.contentToString()}")
+
+            latLong?.let {
+                PhotoMarker(
+                    id = Random.nextLong().toString(),
+                    uri = uri,
+                    markerTitle = "",
+                    gpsLatitude = it[0],
+                    gpsLongitude = it[1]
+                )
             }
         }.onFailure { e ->
             e.printStackTrace()
             _uiState.value = MapUiState.Error("Failed to process image. message : ${e.message}")
         }.getOrNull()
+    }
+
+    private fun getLocationFromMediaStore(context: Context, uri: Uri): DoubleArray? {
+        // Document URI에서 실제 media ID 추출
+        val docId = uri.lastPathSegment ?: return null
+        val mediaId = docId.split(":").lastOrNull() ?: return null
+
+        val projection = arrayOf(
+            MediaStore.Images.Media.LATITUDE,
+            MediaStore.Images.Media.LONGITUDE
+        )
+
+        val mediaUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI.buildUpon()
+            .appendPath(mediaId)
+            .build()
+
+        return try {
+            context.contentResolver.query(mediaUri, projection, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val latIndex = cursor.getColumnIndex(MediaStore.Images.Media.LATITUDE)
+                    val lonIndex = cursor.getColumnIndex(MediaStore.Images.Media.LONGITUDE)
+
+                    if (latIndex >= 0 && lonIndex >= 0) {
+                        val lat = cursor.getDouble(latIndex)
+                        val lon = cursor.getDouble(lonIndex)
+                        if (lat != 0.0 || lon != 0.0) {
+                            doubleArrayOf(lat, lon)
+                        } else null
+                    } else null
+                } else null
+            }
+        } catch (e: Exception) {
+            Log.e("MapViewModel", "Failed to query MediaStore", e)
+            null
+        }
     }
 
     /*@SuppressLint("MissingPermission")

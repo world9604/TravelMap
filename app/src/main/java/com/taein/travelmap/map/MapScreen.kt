@@ -2,6 +2,7 @@ package com.taein.travelmap.map
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaScannerConnection
 import android.net.Uri
@@ -210,10 +211,7 @@ private fun CameraActionButton(
 ) {
     val context = LocalContext.current
     var imageUri by remember { mutableStateOf<Uri?>(null) }
-    val file = File(context.externalMediaDirs.first(), "${System.currentTimeMillis()}.jpg")
-    if (!file.exists()) file.createNewFile()
-    imageUri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
-    Log.d(AppArgs.TAG, "CameraActionButton2 imageUri 1 : $imageUri")
+    Log.d(AppArgs.TAG, "CameraActionButton fail222")
 
     val takePictureLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
@@ -229,24 +227,29 @@ private fun CameraActionButton(
                     viewModel.processImageUri(context, uri)
                 }
             } else {
-                Log.d(AppArgs.TAG, "CameraActionButton2 fail")
+                Log.d(AppArgs.TAG, "CameraActionButton fail")
             }
         } ?: run {
-            Log.d(AppArgs.TAG, "CameraActionButton2 imageUri is null")
+            Log.d(AppArgs.TAG, "CameraActionButton imageUri is null")
         }
+    }
+
+    fun launchCamera() {
+        imageUri = createImageUri(context)
+        takePictureLauncher.launch(imageUri)
     }
 
     RequireCameraAndLocationPermission(
         requestPermission = {
             RequestCameraPermissionDialog {
-                takePictureLauncher.launch(imageUri)
+                launchCamera()
             }
         }
     ) {
         FloatingActionButton(
             containerColor = MaterialTheme.colorScheme.onPrimary,
             onClick = {
-                takePictureLauncher.launch(imageUri)
+                launchCamera()
             }
         ) {
             Icon(
@@ -255,6 +258,12 @@ private fun CameraActionButton(
             )
         }
     }
+}
+
+fun createImageUri(context: Context): Uri {
+    val file = File(context.externalMediaDirs.first(), "${System.currentTimeMillis()}.jpg")
+    if (!file.exists()) file.createNewFile()
+    return FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
 }
 
 @Composable
@@ -317,16 +326,46 @@ private fun AddPhotoActionButton(
     viewModel: MapViewModel
 ) {
     val context: Context = LocalContext.current
+    var isPermissionGranted by remember { mutableStateOf(false) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        isPermissionGranted = granted
+    }
+
+    LaunchedEffect(Unit) {
+        isPermissionGranted = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_MEDIA_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
     val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.GetMultipleContents()
+        ActivityResultContracts.OpenMultipleDocuments()
     ) { uris: List<Uri> ->
+        // 각 URI에 대해 영구 권한 획득
+        uris.forEach { uri ->
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (e: SecurityException) {
+                Log.e("MapScreen", "Failed to take persistable permission for $uri", e)
+            }
+        }
         viewModel.processImageUri(context, uris)
     }
 
     FloatingActionButton(
         containerColor = MaterialTheme.colorScheme.onPrimary,
         onClick = {
-            launcher.launch("image/*")
+            if (isPermissionGranted) {
+                launcher.launch(arrayOf("image/*"))
+            } else {
+                permissionLauncher.launch(Manifest.permission.ACCESS_MEDIA_LOCATION)
+            }
         }
     ) {
         Row(modifier = Modifier.padding(horizontal = 16.dp)) {

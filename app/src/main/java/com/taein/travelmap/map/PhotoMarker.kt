@@ -22,5 +22,6 @@ fun PhotoMarker.asEntity() = PhotoMarkerEntity(
     id = id,
     uri = uri,
     gpsLatitude = gpsLatitude,
-    gpsLongitude = gpsLongitude
+    gpsLongitude = gpsLongitude,
+    markerTitle = markerTitle
 )

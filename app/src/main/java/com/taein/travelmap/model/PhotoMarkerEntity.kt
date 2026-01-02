@@ -10,12 +10,14 @@ data class PhotoMarkerEntity(
     @PrimaryKey val id: String,
     val uri: Uri,
     val gpsLatitude: Double,
-    val gpsLongitude: Double
+    val gpsLongitude: Double,
+    val markerTitle: String,
 )
 
 fun PhotoMarkerEntity.asExternalModel() = PhotoMarker(
     id = id,
     uri = uri,
     gpsLatitude = gpsLatitude,
-    gpsLongitude = gpsLongitude
+    gpsLongitude = gpsLongitude,
+    markerTitle = markerTitle
 )
