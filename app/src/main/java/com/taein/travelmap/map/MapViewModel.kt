@@ -43,10 +43,10 @@ class MapViewModel @Inject constructor(
                 .map { photoMarkers -> photoMarkers.map { photoMarker ->
                         val diary = diaryRepository.observe(photoMarker.id).firstOrNull()
                         if (!diary?.contents.isNullOrBlank()) {
+                            photoMarker
+                        } else {
                             photoMarker.copy(
                                 markerTitle = context.getString(R.string.photo_marker_no_content_text))
-                        } else {
-                            photoMarker
                         }
                     }
                 }.map { updatedPhotoMarkers ->

@@ -411,7 +411,6 @@ fun DisplayPhoto(
         width = dimensionResource(R.dimen.photo_marker_size),
         height = dimensionResource(R.dimen.photo_marker_size),
         isFlat = true,
-        angle = 90f,
     )
 }
 
