@@ -66,6 +66,7 @@ import com.naver.maps.map.compose.rememberMarkerState
 import com.naver.maps.map.overlay.OverlayImage
 import com.taein.travelmap.AppArgs
 import com.taein.travelmap.R
+import ted.gun0912.clustering.naver.TedNaverClustering
 import java.io.File
 
 
@@ -111,6 +112,7 @@ private fun OnMapScreen(
     uiState: MapUiState = MapUiState.Loading,
     onPhotoClick: (String) -> Unit
 ) {
+    val context = LocalContext.current
     val (selectedOption, onOptionSelected) = remember { mutableStateOf(2) }
 
     val locationTrackingMode = when (selectedOption) {
@@ -147,15 +149,17 @@ private fun OnMapScreen(
         contentPadding = contentPadding) {
             when (uiState) {
                 is MapUiState.Success -> {
-                    if (uiState.isEmpty()) {
-                        Unit
-                    } else {
-                        for (userPhoto in uiState.photoMarker) {
-                            DisplayPhoto(
-                                userPhoto = userPhoto,
-                                onPhotoClick = { onPhotoClick(userPhoto.id) }
-                            )
-                        }
+                    if (!uiState.isEmpty()) {
+                        // TED Clustering을 사용한 마커 클러스터링
+                        TedNaverClustering<PhotoMarker>()
+                            .items(uiState.photoMarker)
+                            .markerClickListener { photoMarker ->
+                                onPhotoClick(photoMarker.id)
+                            }
+                            .customMarker { photoMarker ->
+                                createCustomView(context, photoMarker.uri, photoMarker.markerTitle)
+                            }
+                            .make()
                     }
                 }
                 else -> Unit
