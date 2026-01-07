@@ -12,9 +12,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -52,26 +60,59 @@ fun DetailPhotoMarkerScreenPreview() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailPhotoMarkerScreen(
-    viewModel: DetailPhotoMarkerViewModel = hiltViewModel()
+    viewModel: DetailPhotoMarkerViewModel = hiltViewModel(),
+    onNavigateBack: () -> Unit = {}
 ) {
-    val modifier = Modifier
     val uiState by viewModel.detailPhotoMarkerUiState.collectAsState()
 
-    when (uiState) {
-        is DetailPhotoMarkerUiState.Error -> TODO()
-        DetailPhotoMarkerUiState.Loading -> LoadingScreen()
-        DetailPhotoMarkerUiState.NotShown -> TODO()
-        is DetailPhotoMarkerUiState.PhotoUploadSuccess -> {
-            val successState = uiState as DetailPhotoMarkerUiState.PhotoUploadSuccess
-            DetailPhotoMarker(
-                diary = successState.diary,
-                modifier = modifier,
-                onDiaryContentsChange = { newText ->
-                    viewModel.updateDiaryContents(newText)
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(text = "Diary")
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
+                actions = {
+                    TextButton(
+                        onClick = {
+                            viewModel.deleteDiary {
+                                onNavigateBack()
+                            }
+                        }
+                    ) {
+                        Text(
+                            text = "Delete",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             )
+        }
+    ) { innerPadding ->
+        when (uiState) {
+            is DetailPhotoMarkerUiState.Error -> TODO()
+            DetailPhotoMarkerUiState.Loading -> LoadingScreen()
+            DetailPhotoMarkerUiState.NotShown -> TODO()
+            is DetailPhotoMarkerUiState.PhotoUploadSuccess -> {
+                val successState = uiState as DetailPhotoMarkerUiState.PhotoUploadSuccess
+                DetailPhotoMarker(
+                    diary = successState.diary,
+                    modifier = Modifier.padding(innerPadding),
+                    onDiaryContentsChange = { newText ->
+                        viewModel.updateDiaryContents(newText)
+                    }
+                )
+            }
         }
     }
 }

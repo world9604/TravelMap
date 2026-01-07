@@ -103,7 +103,9 @@ fun NavGraph(
                 navArgument(markerIdArg) { type = NavType.StringType }
             )
         ) {
-            DetailPhotoMarkerScreen()
+            DetailPhotoMarkerScreen(
+                onNavigateBack = upPress
+            )
         }
         composable(
             route = Destination.DetailHotPlace.route

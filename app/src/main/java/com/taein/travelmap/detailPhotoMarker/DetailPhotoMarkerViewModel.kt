@@ -76,4 +76,11 @@ class DetailPhotoMarkerViewModel @Inject constructor(
             }
         }
     }
+
+    fun deleteDiary(onDeleteComplete: () -> Unit) {
+        viewModelScope.launch {
+            diaryRepository.deleteDiary(markerId)
+            onDeleteComplete()
+        }
+    }
 }

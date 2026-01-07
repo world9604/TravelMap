@@ -24,4 +24,7 @@ interface DiaryDao {
 
     @Update
     suspend fun updateDiary(diary: DiaryEntity)
+
+    @Query("DELETE FROM diaries WHERE id = :id")
+    suspend fun deleteDiary(id: String)
 }

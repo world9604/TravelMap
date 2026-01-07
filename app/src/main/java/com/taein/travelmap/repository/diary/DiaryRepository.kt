@@ -14,4 +14,6 @@ interface DiaryRepository {
     fun observe(id: String): Flow<Diary?>
 
     suspend fun updateDiary(diary: Diary)
+
+    suspend fun deleteDiary(id: String)
 }

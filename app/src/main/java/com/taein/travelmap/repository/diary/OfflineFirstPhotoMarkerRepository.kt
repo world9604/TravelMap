@@ -37,4 +37,8 @@ class OfflineFirstDiaryRepository @Inject constructor(
     override suspend fun updateDiary(diary: Diary) {
         diaryDao.updateDiary(diary.asEntity())
     }
+
+    override suspend fun deleteDiary(id: String) {
+        diaryDao.deleteDiary(id)
+    }
 }
