@@ -54,6 +54,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.naver.maps.geometry.LatLng
+import com.naver.maps.geometry.LatLngBounds
+import com.naver.maps.map.CameraUpdate
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
 import com.naver.maps.map.compose.LocationTrackingMode
 import com.naver.maps.map.compose.MapProperties
@@ -111,7 +113,8 @@ private fun OnMapScreen(
     uiState: MapUiState = MapUiState.Loading,
     onPhotoClick: (String) -> Unit
 ) {
-    val (selectedOption, onOptionSelected) = remember { mutableStateOf(2) }
+    val (selectedOption, onOptionSelected) = remember { mutableStateOf(0) }
+    var hasMovedToMarkers by remember { mutableStateOf(false) }
 
     val locationTrackingMode = when (selectedOption) {
         0 -> LocationTrackingMode.None
@@ -126,6 +129,32 @@ private fun OnMapScreen(
         else -> false
     }
     val cameraPositionState = rememberCameraPositionState()
+
+    // PhotoMarker가 로드되면 해당 위치로 카메라 이동
+    LaunchedEffect(uiState) {
+        if (uiState is MapUiState.Success && !uiState.isEmpty() && !hasMovedToMarkers) {
+            val photoMarkers = uiState.photoMarker
+
+            val cameraUpdate = if (photoMarkers.size == 1) {
+                // 마커가 1개일 때는 해당 위치로 이동
+                val marker = photoMarkers.first()
+                CameraUpdate.scrollAndZoomTo(
+                    LatLng(marker.gpsLatitude, marker.gpsLongitude),
+                    15.0 // 적절한 줌 레벨
+                )
+            } else {
+                // 마커가 여러 개일 때는 모든 마커가 보이도록 bounds 설정
+                val boundsBuilder = LatLngBounds.Builder()
+                photoMarkers.forEach { marker ->
+                    boundsBuilder.include(LatLng(marker.gpsLatitude, marker.gpsLongitude))
+                }
+                CameraUpdate.fitBounds(boundsBuilder.build(), 100) // 100dp padding
+            }
+
+            cameraPositionState.animate(cameraUpdate)
+            hasMovedToMarkers = true
+        }
+    }
 
     NaverMap(
         cameraPositionState = cameraPositionState,
