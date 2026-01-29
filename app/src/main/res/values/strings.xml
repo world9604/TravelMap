@@ -6,5 +6,5 @@
     <string name="description_map_fragment">MapFragment를 사용한 지도 디스플레이</string>
     <string name="user_photo_image_view">사용자가 선택한 포토 이미지뷰</string>
     <string name="no_image_with_location_info">위치 정보를 가지고 있는 이미지가 없습니다.</string>
-    <string name="photo_marker_no_content_text">사진 속 이야기를 남겨주세요.</string>
+    <string name="photo_marker_no_content_text">사진 속\n이야기를\n남겨주세요</string>
 </resources>

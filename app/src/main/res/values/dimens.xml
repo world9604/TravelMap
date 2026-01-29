@@ -4,7 +4,8 @@
     <dimen name="logo_margin">12dp</dimen>
     <dimen name="marker_size">60dp</dimen>
     <dimen name="photo_marker_size">70dp</dimen>
-    <dimen name="photo_marker_outer_size">110dp</dimen>
+    <dimen name="photo_marker_outer_width_size">110dp</dimen>
+    <dimen name="photo_marker_outer_height_size">150dp</dimen>
     <dimen name="photo_corner_radius">15dp</dimen>
     <dimen name="custom_info_window_offset_x">-27dp</dimen>
     <dimen name="custom_info_window_offset_y">-9dp</dimen>

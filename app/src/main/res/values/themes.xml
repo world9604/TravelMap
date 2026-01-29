@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="ImageView.Round" parent="">
-        <item name="cornerSize">15%</item>
+        <item name="cornerSize">@dimen/photo_corner_radius</item>
     </style>
     <style name="Theme.TravelMap" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>

@@ -12,9 +12,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.cardview.widget.CardView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -63,6 +64,8 @@ import com.naver.maps.map.compose.NaverMap
 import com.naver.maps.map.compose.rememberCameraPositionState
 import com.naver.maps.map.compose.rememberFusedLocationSource
 import com.naver.maps.map.compose.rememberMarkerState
+import com.naver.maps.map.compose.DisposableMapEffect
+import com.naver.maps.map.overlay.Marker as NaverMarker
 import com.naver.maps.map.overlay.OverlayImage
 import com.taein.travelmap.AppArgs
 import com.taein.travelmap.R
@@ -147,22 +150,33 @@ private fun OnMapScreen(
             }
         },
         contentPadding = contentPadding) {
-            when (uiState) {
-                is MapUiState.Success -> {
-                    if (!uiState.isEmpty()) {
-                        // TED Clustering을 사용한 마커 클러스터링
-                        TedNaverClustering<PhotoMarker>()
-                            .items(uiState.photoMarker)
-                            .markerClickListener { photoMarker ->
-                                onPhotoClick(photoMarker.id)
+            var clusterManager by remember { mutableStateOf<TedNaverClustering<PhotoMarker>?>(null) }
+
+            DisposableMapEffect(uiState) { map ->
+                when (uiState) {
+                    is MapUiState.Success -> {
+                        if (!uiState.isEmpty()) {
+                            if (clusterManager == null) {
+                                clusterManager = TedNaverClustering.with<PhotoMarker>(context, map)
+                                    .markerClickListener { photoMarker ->
+                                        onPhotoClick(photoMarker.id)
+                                    }
+                                    .customMarker { photoMarker ->
+                                        NaverMarker().apply {
+                                            icon = OverlayImage.fromView(createCustomView(context, photoMarker.uri, photoMarker.markerTitle))
+                                        }
+                                    }
+                                    .make()
                             }
-                            .customMarker { photoMarker ->
-                                createCustomView(context, photoMarker.uri, photoMarker.markerTitle)
-                            }
-                            .make()
+                            clusterManager?.clearItems()
+                            clusterManager?.addItems(uiState.photoMarker)
+                        }
                     }
+                    else -> Unit
                 }
-                else -> Unit
+                onDispose {
+                    clusterManager?.clearItems()
+                }
             }
     }
 }
@@ -412,8 +426,6 @@ fun DisplayPhoto(
         state = rememberMarkerState(position = LatLng(userPhoto.gpsLatitude, userPhoto.gpsLongitude)),
         icon = OverlayImage.fromView(createCustomView(context, userPhoto.uri, userPhoto.markerTitle)),
         onClick = { onPhotoClick(); true },
-        width = dimensionResource(R.dimen.photo_marker_size),
-        height = dimensionResource(R.dimen.photo_marker_size),
         isFlat = true,
     )
 }
@@ -437,7 +449,7 @@ fun createCustomView(
         }
     }
 
-    val cardView = rootView.findViewById<CardView>(R.id.card_view)
+    val cardView = rootView.findViewById<View>(R.id.card_view)
     cardView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
     return rootView
 }
